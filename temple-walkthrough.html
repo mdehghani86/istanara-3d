@@ -64,7 +64,7 @@
   <div class="name">🔥 AZARAKHSH TEMPLE</div>
   <div class="sub">Atashkadeh-ye Javidan</div>
   <div class="room" id="roomLabel">Outside the Temple</div>
-  <div class="hint">walk inside through the south arch · explore each chamber · find the trapdoor by the altar</div>
+  <div class="hint">WASD / arrow keys · drag mouse to look · shift to run<br>walk inside through the south arch · find the trapdoor by the altar</div>
 </div>
 
 <div class="controls">
@@ -84,10 +84,10 @@
   <div class="sub">TEMPLE OF ETERNITY</div>
   <p>Step through the south arch into the sanctum of the Sacred Fire. Wander between sixteen pillars, enter the Artifact Storage, the Priest Quarters, the Prayer Hall, or descend the trapdoor stairs into the secret Underground Vault.</p>
   <div class="keys">
-    <span class="key">W A S D</span>
-    <span class="key">mouse · look</span>
+    <span class="key">W A S D / arrows</span>
+    <span class="key">drag mouse · look</span>
+    <span class="key">click · FPS lock</span>
     <span class="key">shift · run</span>
-    <span class="key">esc · release</span>
   </div>
   <button class="startbtn" id="enterBtn">ENTER THE TEMPLE</button>
 </div>
@@ -106,8 +106,8 @@ if (isTouch) document.body.classList.add('touch');
 // SCENE
 // =====================================================================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x080608);
-scene.fog = new THREE.FogExp2(0x080608, 0.022);
+scene.background = new THREE.Color(0x141018);
+scene.fog = new THREE.FogExp2(0x141018, 0.008);
 
 const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerHeight, 0.05, 200);
 camera.position.set(0, 1.7, 18);
@@ -118,7 +118,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.6;
 document.body.appendChild(renderer.domElement);
 
 const controls = new PointerLockControls(camera, renderer.domElement);
@@ -129,13 +129,48 @@ const enterBtn = document.getElementById('enterBtn');
 const crosshair = document.getElementById('crosshair');
 const roomLabelEl = document.getElementById('roomLabel');
 
+// "Started" means the user has clicked into the temple. Movement and look
+// always work after that — pointer lock is purely an optional FPS mode toggled
+// by clicking the canvas.
+let started = false;
 enterBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (!isTouch) controls.lock();
   startScreen.classList.add('hidden');
+  started = true;
 });
-controls.addEventListener('lock', () => { startScreen.classList.add('hidden'); crosshair.classList.remove('hidden'); });
-controls.addEventListener('unlock', () => { startScreen.classList.remove('hidden'); crosshair.classList.add('hidden'); });
+// click on canvas → toggle pointer lock (optional). Even without lock, mouse
+// drag still rotates the camera (see drag handlers below).
+renderer.domElement.addEventListener('click', () => {
+  if (!started || isTouch) return;
+  if (!controls.isLocked) controls.lock();
+});
+controls.addEventListener('lock', () => { crosshair.classList.remove('hidden'); });
+controls.addEventListener('unlock', () => { crosshair.classList.add('hidden'); });
+
+// ─── DRAG-TO-LOOK (works without pointer lock) ────────────────────────
+let dragging = false;
+let dragStartX = 0, dragStartY = 0;
+renderer.domElement.style.cursor = 'grab';
+renderer.domElement.addEventListener('mousedown', (e) => {
+  if (controls.isLocked || isTouch) return;
+  dragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  renderer.domElement.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', (e) => {
+  if (!dragging || controls.isLocked) return;
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  const obj = controls.getObject();
+  obj.rotation.y -= dx * 0.004;
+  camera.rotation.x -= dy * 0.004;
+  camera.rotation.x = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, camera.rotation.x));
+});
+window.addEventListener('mouseup', () => {
+  dragging = false;
+  renderer.domElement.style.cursor = 'grab';
+});
 
 // =====================================================================
 // PROCEDURAL TEXTURES
@@ -513,16 +548,18 @@ const ROOM_H = 5;
       scene.add(item);
     }
   }
-  // single hanging lantern
-  const lantern = new THREE.Mesh(
-    new THREE.SphereGeometry(0.18, 12, 8),
-    new THREE.MeshBasicMaterial({ color: 0xffaa50 })
-  );
-  lantern.position.set((x1+x2)/2, 3.5, (z1+z2)/2);
-  scene.add(lantern);
-  const ll = new THREE.PointLight(0xffaa50, 1.5, 8, 1.6);
-  ll.position.set((x1+x2)/2, 3.5, (z1+z2)/2);
-  scene.add(ll);
+  // hanging lanterns (2 to brighten the room)
+  for (const lz of [z1 + 1.5, z2 - 1.5]) {
+    const lantern = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 12, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffc070 })
+    );
+    lantern.position.set((x1+x2)/2, 3.5, lz);
+    scene.add(lantern);
+    const ll = new THREE.PointLight(0xffc070, 4.5, 12, 1.4);
+    ll.position.set((x1+x2)/2, 3.5, lz);
+    scene.add(ll);
+  }
 }
 
 // ─── ROOM 2: PRIEST QUARTERS (NE) ─────────────────────────────────────
@@ -579,14 +616,22 @@ const ROOM_H = 5;
     );
     candle.position.set(x2 - 2.8, 0.79, bz);
     scene.add(candle);
-    const cl = new THREE.PointLight(0xffd07a, 0.6, 4, 2);
+    const cl = new THREE.PointLight(0xffd07a, 1.5, 6, 1.6);
     cl.position.set(x2 - 2.8, 1.0, bz);
     scene.add(cl);
   }
-  // wall sconce
-  const sconce = new THREE.PointLight(0xffaa50, 1.2, 7, 1.6);
-  sconce.position.set((x1+x2)/2, 3.5, (z1+z2)/2);
-  scene.add(sconce);
+  // 2 ceiling lanterns for general room light
+  for (const lz of [z1 + 1.5, z2 - 1.5]) {
+    const sconce = new THREE.PointLight(0xffc070, 4.5, 13, 1.4);
+    sconce.position.set((x1+x2)/2, 3.8, lz);
+    scene.add(sconce);
+    const lantern = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 12, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffc070 })
+    );
+    lantern.position.set((x1+x2)/2, 3.8, lz);
+    scene.add(lantern);
+  }
 }
 
 // ─── ROOM 3: PRAYER HALL (SE) ─────────────────────────────────────────
@@ -627,12 +672,12 @@ const ROOM_H = 5;
     const lx = x1 + 1.5 + i * 2.5;
     const lz = (z1+z2)/2;
     const lantern = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.22, 0),
-      new THREE.MeshBasicMaterial({ color: 0xffaa50 })
+      new THREE.OctahedronGeometry(0.24, 0),
+      new THREE.MeshBasicMaterial({ color: 0xffc070 })
     );
     lantern.position.set(lx, 4, lz);
     scene.add(lantern);
-    const ll = new THREE.PointLight(0xffaa50, 1.2, 7, 1.7);
+    const ll = new THREE.PointLight(0xffc070, 4, 12, 1.4);
     ll.position.set(lx, 4, lz);
     scene.add(ll);
   }
@@ -763,31 +808,37 @@ const VAULT_FLOOR_Y = -3;
   }
 
   // wall torch (cool blue mystic light to feel "secret")
-  const torch = new THREE.PointLight(0x6a8aa8, 1.4, 8, 1.5);
+  const torch = new THREE.PointLight(0x9ab8d8, 6, 14, 1.3);
   torch.position.set(0, -0.8, VAULT_Z_MIN + 0.5);
   scene.add(torch);
   // visible torch sphere
   const torchSphere = new THREE.Mesh(
-    new THREE.SphereGeometry(0.12, 10, 8),
-    new THREE.MeshBasicMaterial({ color: 0x9ab4d8 })
+    new THREE.SphereGeometry(0.16, 10, 8),
+    new THREE.MeshBasicMaterial({ color: 0xc0d8f0 })
   );
   torchSphere.position.set(0, -0.8, VAULT_Z_MIN + 0.5);
   scene.add(torchSphere);
+  // additional warm gold light to brighten the chest area
+  const vaultFill = new THREE.PointLight(0xffd070, 4, 10, 1.4);
+  vaultFill.position.set(0, -1.5, (VAULT_Z_MIN + VAULT_Z_MAX) / 2);
+  scene.add(vaultFill);
 }
 
 // =====================================================================
 // LIGHTING
 // =====================================================================
-scene.add(new THREE.AmbientLight(0x1a1830, 0.45));
+scene.add(new THREE.AmbientLight(0xb8a890, 1.4));
+// hemisphere light for soft fill — warm sky, cool ground
+scene.add(new THREE.HemisphereLight(0xffd9a8, 0x4a3828, 0.7));
 
-const fireLight = new THREE.PointLight(0xff6818, 9, 22, 1.5);
+const fireLight = new THREE.PointLight(0xff7028, 18, 30, 1.2);
 fireLight.position.set(0, 2.0, 0);
 fireLight.castShadow = true;
 fireLight.shadow.mapSize.set(1024, 1024);
 fireLight.shadow.bias = -0.0008;
 scene.add(fireLight);
 
-const moonLight = new THREE.SpotLight(0x9ab4d8, 7, 35, Math.PI / 14, 0.4, 1);
+const moonLight = new THREE.SpotLight(0xc8d8f0, 12, 40, Math.PI / 12, 0.4, 1);
 moonLight.position.set(0, 18, 0);
 moonLight.target.position.set(0, 0, 0);
 scene.add(moonLight);
@@ -802,16 +853,21 @@ for (let i = 0; i < 8; i++) {
   // skip the sconce if it's at the south entrance gap
   if (Math.abs(a - Math.PI/2) < entranceArc) continue;
   const s = new THREE.Mesh(
-    new THREE.SphereGeometry(0.16, 10, 8),
-    new THREE.MeshBasicMaterial({ color: 0xff8530 })
+    new THREE.SphereGeometry(0.18, 10, 8),
+    new THREE.MeshBasicMaterial({ color: 0xff9a40 })
   );
   s.position.set(x, 4.5, z);
   scene.add(s);
-  const light = new THREE.PointLight(0xff7020, 1.6, 10, 1.7);
+  const light = new THREE.PointLight(0xff8030, 4, 14, 1.4);
   light.position.set(x, 4.5, z);
   scene.add(light);
-  sconces.push({ light, base: 1.6 });
+  sconces.push({ light, base: 4 });
 }
+
+// general overhead fill so corners aren't pitch black
+const fillLight = new THREE.PointLight(0xffe0b8, 2.5, 40, 1.0);
+fillLight.position.set(0, 6, 0);
+scene.add(fillLight);
 
 // moonlight beam through oculus
 const beam = new THREE.Mesh(
@@ -1135,7 +1191,7 @@ function animate() {
     camera.rotation.x = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, camera.rotation.x));
   }
 
-  if (controls.isLocked || isTouch) {
+  if (started) {
     // candidate next position
     const oldX = obj.position.x, oldZ = obj.position.z;
 
