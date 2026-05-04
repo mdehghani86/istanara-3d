@@ -3,42 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Istanara — Azarakhsh Temple Walkthrough</title>
+<title>Istanara — Azarakhsh Temple of Eternity</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
   html, body { width:100%; height:100%; background:#06060a; color:#f5f5f5; font-family:'Outfit', sans-serif; overflow:hidden; touch-action:none; }
   canvas { display:block; }
 
-  .hud { position:fixed; top:14px; left:14px; z-index:10; background:rgba(8,8,14,0.7); backdrop-filter:blur(12px); padding:10px 14px; border-radius:10px; border:1px solid rgba(245,245,245,0.08); font-size:0.78rem; line-height:1.6; pointer-events:none; max-width:260px; }
-  .hud .name { color:#c9a227; font-family:'Cinzel',serif; font-weight:700; font-size:0.9rem; letter-spacing:0.06em; }
-  .hud .hint { color:rgba(245,245,245,0.55); font-size:0.7rem; margin-top:4px; }
+  .hud { position:fixed; top:14px; left:14px; z-index:10; background:rgba(8,8,14,0.78); backdrop-filter:blur(12px); padding:10px 14px; border-radius:10px; border:1px solid rgba(245,245,245,0.08); font-size:0.78rem; line-height:1.6; pointer-events:none; max-width:280px; }
+  .hud .name { color:#c9a227; font-family:'Cinzel',serif; font-weight:700; font-size:0.95rem; letter-spacing:0.06em; }
+  .hud .room { color:#e08555; font-size:0.85rem; font-weight:600; margin-top:2px; }
+  .hud .hint { color:rgba(245,245,245,0.55); font-size:0.7rem; margin-top:6px; line-height:1.5; }
 
-  .controls { position:fixed; bottom:14px; left:14px; z-index:10; display:flex; gap:8px; }
-  .btn { background:rgba(8,8,14,0.7); backdrop-filter:blur(12px); padding:8px 14px; border-radius:8px; border:1px solid rgba(245,245,245,0.1); color:#f5f5f5; font-family:'Outfit', sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; text-decoration:none; }
+  .controls { position:fixed; bottom:14px; left:14px; z-index:10; display:flex; gap:8px; flex-direction:column; align-items:flex-start; }
+  .btn { background:rgba(8,8,14,0.78); backdrop-filter:blur(12px); padding:8px 14px; border-radius:8px; border:1px solid rgba(245,245,245,0.1); color:#f5f5f5; font-family:'Outfit', sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; text-decoration:none; }
   .btn:hover { background:rgba(184,67,26,0.5); border-color:#b8431a; }
 
   .crosshair { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:8px; height:8px; border:1px solid rgba(245,245,245,0.4); border-radius:50%; pointer-events:none; z-index:5; }
   .crosshair.hidden { display:none; }
 
-  .startscreen { position:fixed; inset:0; z-index:100; background:rgba(6,6,10,0.92); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px; cursor:pointer; }
-  .startscreen h2 { font-family:'Cinzel',serif; color:#c9a227; font-size:1.6rem; letter-spacing:0.1em; }
-  .startscreen p { color:rgba(245,245,245,0.7); max-width:420px; text-align:center; line-height:1.7; font-size:0.9rem; }
+  .startscreen { position:fixed; inset:0; z-index:100; background:rgba(6,6,10,0.94); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px; cursor:pointer; padding:20px; }
+  .startscreen h2 { font-family:'Cinzel',serif; color:#c9a227; font-size:1.6rem; letter-spacing:0.1em; text-align:center; }
+  .startscreen .sub { font-family:'Cinzel',serif; color:rgba(245,245,245,0.5); font-size:0.85rem; letter-spacing:0.2em; margin-top:-10px; }
+  .startscreen p { color:rgba(245,245,245,0.7); max-width:480px; text-align:center; line-height:1.7; font-size:0.92rem; }
   .startscreen .keys { display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; justify-content:center; }
   .startscreen .key { padding:6px 12px; background:rgba(255,255,255,0.06); border:1px solid rgba(245,245,245,0.18); border-radius:6px; font-family:monospace; font-size:0.85rem; color:#fff; }
   .startscreen .startbtn { margin-top:12px; padding:14px 32px; background:#c9a227; color:#06060a; font-family:'Cinzel',serif; font-weight:700; letter-spacing:0.1em; border:none; border-radius:8px; font-size:0.95rem; cursor:pointer; }
   .startscreen .startbtn:hover { background:#e0b832; }
   .startscreen.hidden { display:none; }
 
+  /* minimap (lower right) */
+  .minimap-wrap { position:fixed; bottom:14px; right:14px; z-index:10; padding:6px; background:rgba(8,8,14,0.85); backdrop-filter:blur(12px); border:1px solid rgba(201,162,39,0.3); border-radius:10px; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
+  .minimap-wrap .mm-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.18em; color:#c9a227; text-align:center; padding:2px 0 4px; }
+  #minimap { display:block; border-radius:6px; }
+
   /* mobile dual-touch joysticks */
   .joystick { position:fixed; bottom:24px; width:110px; height:110px; border-radius:50%; background:rgba(8,8,14,0.4); border:2px solid rgba(245,245,245,0.18); z-index:8; touch-action:none; display:none; }
   .joystick .stick { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:46px; height:46px; border-radius:50%; background:rgba(201,162,39,0.6); border:1px solid #c9a227; pointer-events:none; }
-  .joystick.move { left:24px; }
-  .joystick.look { right:24px; }
+  .joystick.move { left:24px; bottom:120px; }
+  .joystick.look { right:24px; bottom:260px; }
   .joystick .label { position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font-size:0.65rem; color:rgba(245,245,245,0.5); letter-spacing:0.1em; white-space:nowrap; }
 
   body.touch .joystick { display:block; }
   body.touch .crosshair { display:none; }
+  body.touch .controls { bottom:auto; top:14px; right:14px; left:auto; flex-direction:row; }
+  body.touch .hud { font-size:0.7rem; max-width:200px; }
 </style>
 <script type="importmap">
 {
@@ -53,8 +62,9 @@
 
 <div class="hud">
   <div class="name">🔥 AZARAKHSH TEMPLE</div>
-  <div>Sacred Fire Sanctum</div>
-  <div class="hint">walk inside · approach the altar · look up at the oculus</div>
+  <div class="sub">Atashkadeh-ye Javidan</div>
+  <div class="room" id="roomLabel">Outside the Temple</div>
+  <div class="hint">walk inside through the south arch · explore each chamber · find the trapdoor by the altar</div>
 </div>
 
 <div class="controls">
@@ -64,16 +74,22 @@
 
 <div class="crosshair" id="crosshair"></div>
 
+<div class="minimap-wrap">
+  <div class="mm-title">TEMPLE MAP</div>
+  <canvas id="minimap" width="220" height="220"></canvas>
+</div>
+
 <div class="startscreen" id="startScreen">
   <h2>AZARAKHSH TEMPLE</h2>
-  <p>Step inside the Sacred Fire Sanctum. Walk between the eight pillars, approach the central altar, and look up to see moonlight pouring through the oculus.</p>
+  <div class="sub">TEMPLE OF ETERNITY</div>
+  <p>Step through the south arch into the sanctum of the Sacred Fire. Wander between sixteen pillars, enter the Artifact Storage, the Priest Quarters, the Prayer Hall, or descend the trapdoor stairs into the secret Underground Vault.</p>
   <div class="keys">
     <span class="key">W A S D</span>
     <span class="key">mouse · look</span>
     <span class="key">shift · run</span>
     <span class="key">esc · release</span>
   </div>
-  <button class="startbtn" id="enterBtn">ENTER THE SANCTUM</button>
+  <button class="startbtn" id="enterBtn">ENTER THE TEMPLE</button>
 </div>
 
 <div class="joystick move" id="joyMove"><div class="stick" id="stickMove"></div><div class="label">MOVE</div></div>
@@ -83,17 +99,18 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-// ─── detect touch device ───
 const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 if (isTouch) document.body.classList.add('touch');
 
-// ─── scene setup ───
+// =====================================================================
+// SCENE
+// =====================================================================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0810);
-scene.fog = new THREE.FogExp2(0x0a0810, 0.025);
+scene.background = new THREE.Color(0x080608);
+scene.fog = new THREE.FogExp2(0x080608, 0.022);
 
-const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 200);
-camera.position.set(0, 1.7, 11);
+const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerHeight, 0.05, 200);
+camera.position.set(0, 1.7, 18);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -104,13 +121,13 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 document.body.appendChild(renderer.domElement);
 
-// ─── controls (PointerLock for desktop) ───
 const controls = new PointerLockControls(camera, renderer.domElement);
 scene.add(controls.getObject());
 
 const startScreen = document.getElementById('startScreen');
 const enterBtn = document.getElementById('enterBtn');
 const crosshair = document.getElementById('crosshair');
+const roomLabelEl = document.getElementById('roomLabel');
 
 enterBtn.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -120,59 +137,40 @@ enterBtn.addEventListener('click', (e) => {
 controls.addEventListener('lock', () => { startScreen.classList.add('hidden'); crosshair.classList.remove('hidden'); });
 controls.addEventListener('unlock', () => { startScreen.classList.remove('hidden'); crosshair.classList.add('hidden'); });
 
-// ─── Persian tile floor texture (procedural canvas) ───
-function makeTileTexture() {
+// =====================================================================
+// PROCEDURAL TEXTURES
+// =====================================================================
+function makePersianTile() {
   const size = 512;
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
+  const c = document.createElement('canvas'); c.width = c.height = size;
   const ctx = c.getContext('2d');
-  // background — deep indigo
-  ctx.fillStyle = '#1a1530';
-  ctx.fillRect(0, 0, size, size);
-  // gold lattice grid
-  ctx.strokeStyle = '#c9a227';
-  ctx.lineWidth = 2;
-  const cells = 4;
-  const step = size / cells;
+  ctx.fillStyle = '#1a1530'; ctx.fillRect(0,0,size,size);
+  // gold lattice
+  ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2;
+  const cells = 4, step = size / cells;
   for (let i = 0; i <= cells; i++) {
-    ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, size); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, i * step); ctx.lineTo(size, i * step); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(i*step,0); ctx.lineTo(i*step,size); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i*step); ctx.lineTo(size,i*step); ctx.stroke();
   }
-  // diamonds inside cells
-  ctx.strokeStyle = '#8a6a18';
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i < cells; i++) {
-    for (let j = 0; j < cells; j++) {
-      const cx = i * step + step / 2;
-      const cy = j * step + step / 2;
-      const r = step * 0.32;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath();
-      ctx.stroke();
-      // little gold dot
-      ctx.fillStyle = '#c9a227';
-      ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
-    }
+  ctx.strokeStyle = '#8a6a18'; ctx.lineWidth = 1.5;
+  for (let i=0;i<cells;i++) for (let j=0;j<cells;j++) {
+    const cx=i*step+step/2, cy=j*step+step/2, r=step*0.32;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-r); ctx.lineTo(cx+r,cy); ctx.lineTo(cx,cy+r); ctx.lineTo(cx-r,cy); ctx.closePath(); ctx.stroke();
+    ctx.fillStyle='#c9a227'; ctx.beginPath(); ctx.arc(cx,cy,3,0,Math.PI*2); ctx.fill();
   }
   // 8-point star at center
-  ctx.strokeStyle = '#d4af37';
-  ctx.lineWidth = 2;
-  const cx = size / 2, cy = size / 2, R = size * 0.18;
-  ctx.beginPath();
-  for (let k = 0; k < 8; k++) {
-    const a = (k / 8) * Math.PI * 2;
-    const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
-    if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2;
+  const cx=size/2, cy=size/2, R=size*0.18;
+  for (let s=0; s<2; s++) {
+    ctx.beginPath();
+    for (let k=0;k<8;k++) {
+      const a = (k/8 + s/16) * Math.PI*2;
+      const x = cx+Math.cos(a)*R, y = cy+Math.sin(a)*R;
+      if (k===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath(); ctx.stroke();
   }
-  ctx.closePath(); ctx.stroke();
-  ctx.beginPath();
-  for (let k = 0; k < 8; k++) {
-    const a = (k / 8 + 1/16) * Math.PI * 2;
-    const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
-    if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath(); ctx.stroke();
-
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -180,32 +178,22 @@ function makeTileTexture() {
   return tex;
 }
 
-// ─── stone wall texture (procedural noise) ───
-function makeStoneTexture() {
+function makeStone(color = '#3a2820') {
   const size = 256;
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
+  const c = document.createElement('canvas'); c.width = c.height = size;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#3a2820';
-  ctx.fillRect(0, 0, size, size);
-  for (let i = 0; i < 4000; i++) {
-    const x = Math.random() * size, y = Math.random() * size;
-    const v = Math.floor(40 + Math.random() * 60);
-    ctx.fillStyle = `rgba(${v + 20}, ${v + 10}, ${v}, 0.3)`;
-    ctx.fillRect(x, y, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  ctx.fillStyle = color; ctx.fillRect(0,0,size,size);
+  for (let i=0;i<4000;i++) {
+    const x=Math.random()*size, y=Math.random()*size;
+    const v=Math.floor(40+Math.random()*60);
+    ctx.fillStyle = `rgba(${v+20},${v+10},${v},0.3)`;
+    ctx.fillRect(x,y,1+Math.random()*2,1+Math.random()*2);
   }
-  // mortar lines (horizontal)
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-  ctx.lineWidth = 1;
-  for (let y = 0; y < size; y += 32) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
-  }
-  // staggered vertical mortar
-  for (let y = 0; y < size; y += 32) {
-    const offset = ((y / 32) % 2) * 32;
-    for (let x = offset; x < size; x += 64) {
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 32); ctx.stroke();
-    }
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+  for (let y=0;y<size;y+=32) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(size,y); ctx.stroke(); }
+  for (let y=0;y<size;y+=32) {
+    const off = ((y/32)%2)*32;
+    for (let x=off;x<size;x+=64) { ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+32); ctx.stroke(); }
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -213,121 +201,246 @@ function makeStoneTexture() {
   return tex;
 }
 
-const tileTex = makeTileTexture();
-const stoneTex = makeStoneTexture();
+function makeWood() {
+  const size = 256;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#5a3818'; ctx.fillRect(0,0,size,size);
+  for (let i=0;i<size;i+=2) {
+    const v = 30 + Math.sin(i*0.05)*15 + Math.random()*20;
+    ctx.fillStyle = `rgb(${50+v},${28+v*0.5},${10+v*0.3})`;
+    ctx.fillRect(0, i, size, 2);
+  }
+  for (let i=0;i<8;i++) {
+    const y = Math.random()*size;
+    ctx.strokeStyle = 'rgba(20,10,5,0.4)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(size,y+Math.random()*4-2); ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
 
-// ─── floor (round tiled) ───
-const floorGeo = new THREE.CircleGeometry(13, 64);
-const floorMat = new THREE.MeshStandardMaterial({
-  map: tileTex,
-  roughness: 0.7,
-  metalness: 0.15,
+const tileTex = makePersianTile();
+const stoneTex = makeStone();
+const stoneDarkTex = makeStone('#2a1a14');
+const woodTex = makeWood();
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+function addWall(x1, z1, x2, z2, h = 5, opts = {}) {
+  const dx = x2 - x1, dz = z2 - z1;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.01) return null;
+  const angle = Math.atan2(dz, dx);
+  const thickness = opts.thickness ?? 0.3;
+  const geo = new THREE.BoxGeometry(len, h, thickness);
+  const tex = (opts.tex || stoneTex).clone(); tex.needsUpdate = true;
+  tex.repeat.set(Math.max(1, len/2), Math.max(1, h/2));
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex,
+    color: opts.color ?? 0x4a3528,
+    roughness: opts.roughness ?? 0.92,
+  });
+  const wall = new THREE.Mesh(geo, mat);
+  wall.position.set((x1+x2)/2, h/2, (z1+z2)/2);
+  wall.rotation.y = -angle;
+  wall.castShadow = true; wall.receiveShadow = true;
+  scene.add(wall);
+  return wall;
+}
+
+function addLintel(x1, z1, x2, z2, doorH = 2.5, ceilH = 5, opts = {}) {
+  // a strip above a doorway
+  const dx = x2 - x1, dz = z2 - z1;
+  const len = Math.hypot(dx, dz);
+  const h = ceilH - doorH;
+  if (h <= 0) return;
+  const geo = new THREE.BoxGeometry(len, h, opts.thickness ?? 0.3);
+  const mat = new THREE.MeshStandardMaterial({ color: opts.color ?? 0x6a4818, roughness: 0.7, metalness: 0.2 });
+  const lintel = new THREE.Mesh(geo, mat);
+  lintel.position.set((x1+x2)/2, doorH + h/2, (z1+z2)/2);
+  lintel.rotation.y = -Math.atan2(dz, dx);
+  lintel.castShadow = true; lintel.receiveShadow = true;
+  scene.add(lintel);
+}
+
+// =====================================================================
+// FLOOR (main temple disc, with hole for the stairs)
+// =====================================================================
+function makeFloorWithHole() {
+  // Persian tile floor — outer circle radius 13 with rectangular hole for stairs
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, 13, 0, Math.PI * 2, false);
+  const hole = new THREE.Path();
+  // hole at south for stairs entrance — small square trapdoor opening at z=2.5..4
+  hole.moveTo(-1.2, 2.5);
+  hole.lineTo(1.2, 2.5);
+  hole.lineTo(1.2, 4.5);
+  hole.lineTo(-1.2, 4.5);
+  hole.lineTo(-1.2, 2.5);
+  shape.holes.push(hole);
+  const geo = new THREE.ShapeGeometry(shape, 64);
+  geo.rotateX(-Math.PI / 2);
+  // map UVs so the tile texture tiles nicely
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i, uv.getX(i) / 4, uv.getY(i) / 4);
+  }
+  const mat = new THREE.MeshStandardMaterial({ map: tileTex, roughness: 0.7, metalness: 0.15 });
+  const m = new THREE.Mesh(geo, mat);
+  m.receiveShadow = true;
+  return m;
+}
+scene.add(makeFloorWithHole());
+
+// outer ground (cracked stone outside the temple)
+const outerGroundGeo = new THREE.RingGeometry(13, 50, 64);
+outerGroundGeo.rotateX(-Math.PI / 2);
+const outerGroundMat = new THREE.MeshStandardMaterial({
+  map: stoneTex, color: 0x231a14, roughness: 0.95,
 });
-const floor = new THREE.Mesh(floorGeo, floorMat);
-floor.rotation.x = -Math.PI / 2;
-floor.receiveShadow = true;
-scene.add(floor);
+outerGroundMat.map.repeat.set(20, 20);
+const outerGround = new THREE.Mesh(outerGroundGeo, outerGroundMat);
+outerGround.position.y = -0.02;
+outerGround.receiveShadow = true;
+scene.add(outerGround);
 
-// ─── outer wall (cylinder shell) ───
-const wallTexA = stoneTex.clone(); wallTexA.needsUpdate = true; wallTexA.repeat.set(8, 2);
-const wallGeo = new THREE.CylinderGeometry(13, 13, 7, 64, 1, true);
-const wallMat = new THREE.MeshStandardMaterial({
-  map: wallTexA,
-  side: THREE.BackSide,
-  roughness: 0.95,
-  color: 0x4a3528,
-});
-const wall = new THREE.Mesh(wallGeo, wallMat);
-wall.position.y = 3.5;
-wall.receiveShadow = true;
-scene.add(wall);
+// =====================================================================
+// OUTER WALL (round, with south entrance gap)
+// =====================================================================
+const outerR = 14;
+const entranceArc = Math.PI / 12;   // ~15° gap at south (z = +outerR)
+// The south direction is angle = π/2 in (cosθ, sinθ) → (0, R)
+// Build one continuous arc from (π/2 + entranceArc/2) all the way around to (π/2 - entranceArc/2 + 2π)
+{
+  const startA = Math.PI/2 + entranceArc/2;
+  const arcLen = Math.PI * 2 - entranceArc;
+  const wallH = 8;
+  const geo = new THREE.CylinderGeometry(outerR, outerR, wallH, 96, 1, true, startA, arcLen);
+  const tex = stoneTex.clone(); tex.needsUpdate = true;
+  tex.repeat.set(20, 3);
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex, side: THREE.BackSide, color: 0x4a3528, roughness: 0.95,
+  });
+  const wall = new THREE.Mesh(geo, mat);
+  wall.position.y = wallH / 2;
+  wall.receiveShadow = true;
+  scene.add(wall);
 
-// ─── domed ceiling with oculus ───
-const domeGeo = new THREE.SphereGeometry(13, 64, 32, 0, Math.PI * 2, 0.18, Math.PI / 2 - 0.18);
-const domeMat = new THREE.MeshStandardMaterial({
-  map: stoneTex.clone(),
-  side: THREE.BackSide,
-  roughness: 0.9,
-  color: 0x3a2820,
-});
-domeMat.map.repeat.set(6, 3); domeMat.map.needsUpdate = true;
-const dome = new THREE.Mesh(domeGeo, domeMat);
-dome.position.y = 7;
-dome.receiveShadow = true;
-scene.add(dome);
+  // outer face (visible from outside) — same arc, FrontSide, slightly larger
+  const geo2 = new THREE.CylinderGeometry(outerR + 0.3, outerR + 0.3, wallH, 96, 1, true, startA, arcLen);
+  const mat2 = new THREE.MeshStandardMaterial({
+    map: tex, side: THREE.FrontSide, color: 0x3a2820, roughness: 0.95,
+  });
+  const wall2 = new THREE.Mesh(geo2, mat2);
+  wall2.position.y = wallH / 2;
+  wall2.receiveShadow = true;
+  scene.add(wall2);
+}
 
-// ─── 8 pillars around the perimeter ───
-const pillarRadius = 9;
+// south entrance — frame the doorway with a thick lintel (curved ceiling above the gap)
+{
+  const frameH = 8, doorH = 4;
+  // two side jambs of the doorway
+  for (const sx of [-1.5, 1.5]) {
+    const jamb = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, frameH, 1),
+      new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.7 })
+    );
+    jamb.position.set(sx, frameH/2, outerR);
+    jamb.castShadow = true;
+    scene.add(jamb);
+  }
+  // arched lintel above
+  const lintel = new THREE.Mesh(
+    new THREE.BoxGeometry(3.2, 1.2, 1),
+    new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.65, metalness: 0.2, emissive: 0x2a1a08, emissiveIntensity: 0.3 })
+  );
+  lintel.position.set(0, doorH + 0.6, outerR);
+  lintel.castShadow = true;
+  scene.add(lintel);
+}
+
+// south exterior steps (a few stone steps leading up to entrance)
+for (let i = 0; i < 5; i++) {
+  const stepGeo = new THREE.BoxGeometry(6 - i * 0.4, 0.18, 0.7);
+  const stepMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.85 });
+  const step = new THREE.Mesh(stepGeo, stepMat);
+  step.position.set(0, -0.09 - i * 0.05, outerR + 0.6 + i * 0.7);
+  step.receiveShadow = true; step.castShadow = true;
+  scene.add(step);
+}
+
+// =====================================================================
+// 16 PILLARS in a ring at radius 6.3 (matches floor plan)
+// =====================================================================
 const pillars = [];
-for (let i = 0; i < 8; i++) {
-  const angle = (i / 8) * Math.PI * 2;
+const pillarRadius = 6.3;
+for (let i = 0; i < 16; i++) {
+  const angle = (i / 16) * Math.PI * 2;
   const x = Math.cos(angle) * pillarRadius;
   const z = Math.sin(angle) * pillarRadius;
 
-  // shaft
-  const shaftGeo = new THREE.CylinderGeometry(0.45, 0.55, 6.5, 16);
-  const shaftMat = new THREE.MeshStandardMaterial({
-    map: stoneTex.clone(),
-    color: 0x5a4032,
-    roughness: 0.85,
-  });
-  shaftMat.map.repeat.set(1, 3); shaftMat.map.needsUpdate = true;
-  const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+  const shaftGeo = new THREE.CylinderGeometry(0.32, 0.4, 6.5, 16);
+  const shaftTex = stoneTex.clone(); shaftTex.needsUpdate = true; shaftTex.repeat.set(1, 3);
+  const shaft = new THREE.Mesh(
+    shaftGeo,
+    new THREE.MeshStandardMaterial({ map: shaftTex, color: 0x5a4032, roughness: 0.85 })
+  );
   shaft.position.set(x, 3.25, z);
   shaft.castShadow = true; shaft.receiveShadow = true;
   scene.add(shaft);
 
-  // capital (top)
-  const capGeo = new THREE.BoxGeometry(1.4, 0.35, 1.4);
-  const capMat = new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.6, metalness: 0.3, emissive: 0x2a1a08, emissiveIntensity: 0.2 });
-  const cap = new THREE.Mesh(capGeo, capMat);
+  const cap = new THREE.Mesh(
+    new THREE.BoxGeometry(1.0, 0.3, 1.0),
+    new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.6, metalness: 0.3, emissive: 0x2a1a08, emissiveIntensity: 0.2 })
+  );
   cap.position.set(x, 6.65, z);
   cap.castShadow = true;
   scene.add(cap);
 
-  // base
-  const baseGeo = new THREE.BoxGeometry(1.5, 0.4, 1.5);
-  const base = new THREE.Mesh(baseGeo, capMat.clone());
-  base.position.set(x, 0.2, z);
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(1.1, 0.35, 1.1),
+    new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.7, metalness: 0.25 })
+  );
+  base.position.set(x, 0.18, z);
   base.castShadow = true; base.receiveShadow = true;
   scene.add(base);
 
   pillars.push({ x, z });
 }
 
-// ─── central altar (sacred fire) ───
-const altarBaseGeo = new THREE.CylinderGeometry(1.0, 1.2, 0.4, 24);
-const altarBaseMat = new THREE.MeshStandardMaterial({ color: 0x2a1a14, roughness: 0.7, metalness: 0.4 });
-const altarBase = new THREE.Mesh(altarBaseGeo, altarBaseMat);
-altarBase.position.y = 0.2;
-altarBase.castShadow = true; altarBase.receiveShadow = true;
+// =====================================================================
+// CENTRAL ALTAR + SACRED FIRE
+// =====================================================================
+const altarBase = new THREE.Mesh(
+  new THREE.CylinderGeometry(1.0, 1.2, 0.4, 24),
+  new THREE.MeshStandardMaterial({ color: 0x2a1a14, roughness: 0.7, metalness: 0.4 })
+);
+altarBase.position.y = 0.2; altarBase.castShadow = true; altarBase.receiveShadow = true;
 scene.add(altarBase);
 
-const altarTopGeo = new THREE.CylinderGeometry(0.85, 1.0, 0.6, 24);
-const altarTopMat = new THREE.MeshStandardMaterial({ color: 0x4a2818, roughness: 0.5, metalness: 0.5, emissive: 0x4a1808, emissiveIntensity: 0.5 });
-const altarTop = new THREE.Mesh(altarTopGeo, altarTopMat);
-altarTop.position.y = 0.7;
-altarTop.castShadow = true;
+const altarTop = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.85, 1.0, 0.6, 24),
+  new THREE.MeshStandardMaterial({ color: 0x4a2818, roughness: 0.5, metalness: 0.5, emissive: 0x4a1808, emissiveIntensity: 0.5 })
+);
+altarTop.position.y = 0.7; altarTop.castShadow = true;
 scene.add(altarTop);
 
-// fire bowl
-const bowlGeo = new THREE.CylinderGeometry(0.7, 0.4, 0.3, 20);
-const bowlMat = new THREE.MeshStandardMaterial({ color: 0x6a3418, roughness: 0.4, metalness: 0.6, emissive: 0xff4810, emissiveIntensity: 0.8 });
-const bowl = new THREE.Mesh(bowlGeo, bowlMat);
+const bowl = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.7, 0.4, 0.3, 20),
+  new THREE.MeshStandardMaterial({ color: 0x6a3418, roughness: 0.4, metalness: 0.6, emissive: 0xff4810, emissiveIntensity: 0.8 })
+);
 bowl.position.y = 1.05;
 scene.add(bowl);
 
-// flame (cone with additive shader-ish material)
-const flameGeo = new THREE.ConeGeometry(0.55, 1.6, 14, 1, true);
-const flameMat = new THREE.MeshBasicMaterial({
-  color: 0xff8030,
-  transparent: true,
-  opacity: 0.85,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-  side: THREE.DoubleSide,
-});
-const flame = new THREE.Mesh(flameGeo, flameMat);
+const flame = new THREE.Mesh(
+  new THREE.ConeGeometry(0.55, 1.6, 14, 1, true),
+  new THREE.MeshBasicMaterial({ color: 0xff8030, transparent:true, opacity:0.85, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide })
+);
 flame.position.y = 1.95;
 scene.add(flame);
 
@@ -338,106 +451,419 @@ const flameInner = new THREE.Mesh(
 flameInner.position.y = 1.7;
 scene.add(flameInner);
 
-// ─── lighting ───
-scene.add(new THREE.AmbientLight(0x1a1830, 0.35));
+// =====================================================================
+// DOMED CEILING with oculus
+// =====================================================================
+const domeGeo = new THREE.SphereGeometry(13, 64, 32, 0, Math.PI * 2, 0.18, Math.PI / 2 - 0.18);
+const domeTex = stoneTex.clone(); domeTex.needsUpdate = true; domeTex.repeat.set(8, 4);
+const dome = new THREE.Mesh(
+  domeGeo,
+  new THREE.MeshStandardMaterial({ map: domeTex, side: THREE.BackSide, color: 0x3a2820, roughness: 0.9 })
+);
+dome.position.y = 7;
+dome.receiveShadow = true;
+scene.add(dome);
 
-// fire light — warm point
-const fireLight = new THREE.PointLight(0xff6818, 8, 20, 1.6);
+// =====================================================================
+// SIDE ROOMS (built between inner ring and outer wall)
+//   Coordinates derived from gen_floor_plans.py at scale 35 px/m
+// =====================================================================
+
+// ─── ROOM 1: ARTIFACT STORAGE (NW) ────────────────────────────────────
+// Floor plan: ar_x=380, ar_y=420 → world (-12, -10.86); width 5.71m, depth 5.14m
+// World box: x∈[-12, -6.29], z∈[-10.86, -5.71]
+// Doorway: east wall, opening from z = -8 to z = -6.4 (1.6m wide)
+const ROOM_H = 5;
+{
+  const x1=-12, x2=-6.29, z1=-10.86, z2=-5.71;
+  // floor
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(x2-x1, z2-z1),
+    new THREE.MeshStandardMaterial({ color: 0x3c2e1e, roughness: 0.85 })
+  );
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set((x1+x2)/2, 0.01, (z1+z2)/2);
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // walls (counterclockwise: N → W → S → E with door cut on E)
+  addWall(x1, z1, x2, z1);                  // north
+  addWall(x1, z2, x1, z1);                  // west
+  addWall(x2, z2, x1, z2);                  // south
+  // east wall split for doorway (z = -8 to z = -6.4)
+  addWall(x2, z1, x2, -8);                  // east (north segment)
+  addWall(x2, -6.4, x2, z2);                // east (south segment)
+  addLintel(x2, -8, x2, -6.4);              // lintel above doorway
+
+  // SHELVES along walls (artifact storage)
+  for (let i = 0; i < 3; i++) {
+    const sh = new THREE.Mesh(
+      new THREE.BoxGeometry(x2-x1-0.6, 0.1, 0.5),
+      new THREE.MeshStandardMaterial({ map: woodTex.clone(), color: 0x5a3818, roughness: 0.8 })
+    );
+    sh.position.set((x1+x2)/2, 0.6 + i * 1.0, z1 + 0.4);
+    sh.castShadow = true; scene.add(sh);
+    // tiny artifact boxes on shelf
+    for (let k = 0; k < 5; k++) {
+      const item = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.4, 0.25),
+        new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.4, metalness: 0.6, emissive:0x4a3008, emissiveIntensity: 0.3 })
+      );
+      item.position.set(x1 + 0.6 + k * 1.0, 0.85 + i * 1.0, z1 + 0.45);
+      scene.add(item);
+    }
+  }
+  // single hanging lantern
+  const lantern = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 12, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffaa50 })
+  );
+  lantern.position.set((x1+x2)/2, 3.5, (z1+z2)/2);
+  scene.add(lantern);
+  const ll = new THREE.PointLight(0xffaa50, 1.5, 8, 1.6);
+  ll.position.set((x1+x2)/2, 3.5, (z1+z2)/2);
+  scene.add(ll);
+}
+
+// ─── ROOM 2: PRIEST QUARTERS (NE) ─────────────────────────────────────
+// Floor plan: pq_x=980, pq_y=400 → world (5.14, -11.43); width 6.29m, depth 6.86m
+{
+  const x1=5.14, x2=11.43, z1=-11.43, z2=-4.57;
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(x2-x1, z2-z1),
+    new THREE.MeshStandardMaterial({ color: 0x4a3828, roughness: 0.85 })
+  );
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set((x1+x2)/2, 0.01, (z1+z2)/2);
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // walls (door on west wall, opening z = -7.5 to z = -5.9)
+  addWall(x1, z1, x2, z1);              // north
+  addWall(x2, z1, x2, z2);              // east
+  addWall(x2, z2, x1, z2);              // south
+  addWall(x1, z2, x1, -5.9);            // west (south segment) — z from -4.57 down to -5.9
+  addWall(x1, -7.5, x1, z1);            // west (north segment)
+  addLintel(x1, -7.5, x1, -5.9);
+
+  // 3 beds + nightstands
+  for (let i = 0; i < 3; i++) {
+    const bz = z1 + 1.5 + i * 1.7;
+    const bed = new THREE.Mesh(
+      new THREE.BoxGeometry(2.0, 0.4, 1.0),
+      new THREE.MeshStandardMaterial({ map: woodTex.clone(), color: 0x6a4828, roughness: 0.7 })
+    );
+    bed.position.set(x2 - 1.4, 0.2, bz);
+    bed.castShadow = true; bed.receiveShadow = true;
+    scene.add(bed);
+    // pillow
+    const pillow = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.15, 0.7),
+      new THREE.MeshStandardMaterial({ color: 0xd0c0a0, roughness: 0.9 })
+    );
+    pillow.position.set(x2 - 2.0, 0.48, bz);
+    pillow.castShadow = true;
+    scene.add(pillow);
+    // nightstand
+    const ns = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.7, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0x4a3018, roughness: 0.7 })
+    );
+    ns.position.set(x2 - 2.8, 0.35, bz);
+    ns.castShadow = true;
+    scene.add(ns);
+    // small candle on nightstand
+    const candle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 0.18, 8),
+      new THREE.MeshBasicMaterial({ color: 0xfff0c0 })
+    );
+    candle.position.set(x2 - 2.8, 0.79, bz);
+    scene.add(candle);
+    const cl = new THREE.PointLight(0xffd07a, 0.6, 4, 2);
+    cl.position.set(x2 - 2.8, 1.0, bz);
+    scene.add(cl);
+  }
+  // wall sconce
+  const sconce = new THREE.PointLight(0xffaa50, 1.2, 7, 1.6);
+  sconce.position.set((x1+x2)/2, 3.5, (z1+z2)/2);
+  scene.add(sconce);
+}
+
+// ─── ROOM 3: PRAYER HALL (SE) ─────────────────────────────────────────
+// Floor plan: ph_x=900, ph_y=900 → world (2.86, 2.86); width 9.14m, depth 8m
+{
+  const x1=2.86, x2=12, z1=2.86, z2=10.86;
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(x2-x1, z2-z1),
+    new THREE.MeshStandardMaterial({ color: 0x3a2818, roughness: 0.85 })
+  );
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set((x1+x2)/2, 0.01, (z1+z2)/2);
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // walls — door on west wall, opening z = 4.5 to z = 6.5 (2m wide)
+  addWall(x1, z1, x2, z1);              // north
+  addWall(x2, z1, x2, z2);              // east
+  addWall(x2, z2, x1, z2);              // south
+  addWall(x1, 6.5, x1, z2);             // west (south)
+  addWall(x1, z1, x1, 4.5);             // west (north)
+  addLintel(x1, 4.5, x1, 6.5);
+
+  // 4 rows × 5 columns of prayer mats (reddish)
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 5; col++) {
+      const mat = new THREE.Mesh(
+        new THREE.BoxGeometry(1.0, 0.05, 0.4),
+        new THREE.MeshStandardMaterial({ color: 0x8a3018, roughness: 0.9 })
+      );
+      mat.position.set(x1 + 1.2 + col * 1.5, 0.025, z1 + 1.0 + row * 1.7);
+      mat.receiveShadow = true;
+      scene.add(mat);
+    }
+  }
+  // 4 hanging lanterns
+  for (let i = 0; i < 4; i++) {
+    const lx = x1 + 1.5 + i * 2.5;
+    const lz = (z1+z2)/2;
+    const lantern = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.22, 0),
+      new THREE.MeshBasicMaterial({ color: 0xffaa50 })
+    );
+    lantern.position.set(lx, 4, lz);
+    scene.add(lantern);
+    const ll = new THREE.PointLight(0xffaa50, 1.2, 7, 1.7);
+    ll.position.set(lx, 4, lz);
+    scene.add(ll);
+  }
+}
+
+// =====================================================================
+// TRAPDOOR + STAIRS + UNDERGROUND VAULT
+// =====================================================================
+
+// Stair pit: from y=0 (top of stairs at z=2.5) to y=-3 (bottom at z=4.5), descends south
+// Then the vault chamber extends further south below the temple
+
+// Build 6 steps descending from z=2.5 (top, y=0) to z=4.5 (bottom, y=-3)
+const STAIRS_TOP_Z = 2.5;
+const STAIRS_BOT_Z = 4.5;
+const STAIRS_TOP_Y = 0;
+const STAIRS_BOT_Y = -3;
+const STEP_COUNT = 6;
+for (let i = 0; i < STEP_COUNT; i++) {
+  const tread = (STAIRS_BOT_Z - STAIRS_TOP_Z) / STEP_COUNT;
+  const riser = (STAIRS_TOP_Y - STAIRS_BOT_Y) / STEP_COUNT;
+  const z_top = STAIRS_TOP_Z + i * tread;
+  const y_top = STAIRS_TOP_Y - i * riser;
+  const step = new THREE.Mesh(
+    new THREE.BoxGeometry(2.4, riser + 0.05, tread + 0.02),
+    new THREE.MeshStandardMaterial({ color: 0x2a1a14, roughness: 0.85 })
+  );
+  step.position.set(0, y_top - (riser + 0.05) / 2, z_top + tread / 2);
+  step.receiveShadow = true; step.castShadow = true;
+  scene.add(step);
+}
+
+// stair walls (sides of the descending corridor)
+for (const sx of [-1.2, 1.2]) {
+  for (let i = 0; i < STEP_COUNT; i++) {
+    const tread = (STAIRS_BOT_Z - STAIRS_TOP_Z) / STEP_COUNT;
+    const z_top = STAIRS_TOP_Z + i * tread;
+    const y_top = STAIRS_TOP_Y - i * (STAIRS_TOP_Y - STAIRS_BOT_Y) / STEP_COUNT;
+    const wall = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 3, tread),
+      new THREE.MeshStandardMaterial({ map: stoneDarkTex.clone(), color: 0x2a1a14, roughness: 0.95 })
+    );
+    wall.position.set(sx, y_top - 1.5, z_top + tread / 2);
+    wall.receiveShadow = true; wall.castShadow = true;
+    scene.add(wall);
+  }
+}
+
+// VAULT chamber — extends south of the stairs, below ground
+// World: x∈[-4, 4], z∈[4.5, 11], floor y=-3, ceiling y=0
+const VAULT_X_MIN = -4, VAULT_X_MAX = 4;
+const VAULT_Z_MIN = 4.5, VAULT_Z_MAX = 11;
+const VAULT_FLOOR_Y = -3;
+{
+  // floor
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(VAULT_X_MAX - VAULT_X_MIN, VAULT_Z_MAX - VAULT_Z_MIN),
+    new THREE.MeshStandardMaterial({ color: 0x1a120c, roughness: 0.9 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set((VAULT_X_MIN+VAULT_X_MAX)/2, VAULT_FLOOR_Y, (VAULT_Z_MIN+VAULT_Z_MAX)/2);
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // ceiling (at y=0, blocks view from above)
+  const ceil = new THREE.Mesh(
+    new THREE.PlaneGeometry(VAULT_X_MAX - VAULT_X_MIN + 0.4, VAULT_Z_MAX - VAULT_Z_MIN),
+    new THREE.MeshStandardMaterial({ color: 0x0a0608, side: THREE.DoubleSide, roughness: 0.95 })
+  );
+  ceil.rotation.x = Math.PI / 2;
+  ceil.position.set((VAULT_X_MIN+VAULT_X_MAX)/2, 0, (VAULT_Z_MIN+VAULT_Z_MAX)/2);
+  scene.add(ceil);
+
+  // 4 walls of vault (only south + east + west — north is open to the stairs above z=4.5)
+  // east wall x = VAULT_X_MAX
+  const wallMat = () => new THREE.MeshStandardMaterial({ map: stoneDarkTex.clone(), color: 0x1a120c, roughness: 0.95 });
+  const eastWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, VAULT_Z_MAX - VAULT_Z_MIN), wallMat());
+  eastWall.position.set(VAULT_X_MAX, -1.5, (VAULT_Z_MIN+VAULT_Z_MAX)/2);
+  eastWall.receiveShadow = true; eastWall.castShadow = true;
+  scene.add(eastWall);
+  const westWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, VAULT_Z_MAX - VAULT_Z_MIN), wallMat());
+  westWall.position.set(VAULT_X_MIN, -1.5, (VAULT_Z_MIN+VAULT_Z_MAX)/2);
+  westWall.receiveShadow = true; westWall.castShadow = true;
+  scene.add(westWall);
+  const southWall = new THREE.Mesh(new THREE.BoxGeometry(VAULT_X_MAX-VAULT_X_MIN+0.3, 3, 0.3), wallMat());
+  southWall.position.set(0, -1.5, VAULT_Z_MAX);
+  southWall.receiveShadow = true; southWall.castShadow = true;
+  scene.add(southWall);
+
+  // TREASURE — golden chest, urns, scattered coins
+  const chest = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.8, 0.8),
+    new THREE.MeshStandardMaterial({ color: 0x8a4a1a, roughness: 0.5, metalness: 0.4, emissive: 0x4a2008, emissiveIntensity: 0.3 })
+  );
+  chest.position.set(0, VAULT_FLOOR_Y + 0.4, VAULT_Z_MAX - 1.2);
+  chest.castShadow = true; chest.receiveShadow = true;
+  scene.add(chest);
+  // chest lid (open) showing gold
+  const lid = new THREE.Mesh(
+    new THREE.BoxGeometry(1.2, 0.15, 0.8),
+    new THREE.MeshStandardMaterial({ color: 0x6a3818, roughness: 0.6 })
+  );
+  lid.position.set(0, VAULT_FLOOR_Y + 0.85, VAULT_Z_MAX - 1.55);
+  lid.rotation.x = -Math.PI / 4;
+  lid.castShadow = true;
+  scene.add(lid);
+  // glowing gold pile inside chest
+  const gold = new THREE.Mesh(
+    new THREE.SphereGeometry(0.45, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshStandardMaterial({ color: 0xf0c050, roughness: 0.3, metalness: 0.85, emissive: 0xc9a227, emissiveIntensity: 0.6 })
+  );
+  gold.position.set(0, VAULT_FLOOR_Y + 0.7, VAULT_Z_MAX - 1.2);
+  scene.add(gold);
+  // gold-emit point light for sparkle
+  const goldLight = new THREE.PointLight(0xc9a227, 1.5, 6, 1.8);
+  goldLight.position.set(0, VAULT_FLOOR_Y + 1.0, VAULT_Z_MAX - 1.2);
+  scene.add(goldLight);
+
+  // 2 urns flanking the chest
+  for (const ux of [-1.5, 1.5]) {
+    const urn = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3, 0.4, 0.8, 12),
+      new THREE.MeshStandardMaterial({ color: 0x4a2818, roughness: 0.6, metalness: 0.3 })
+    );
+    urn.position.set(ux, VAULT_FLOOR_Y + 0.4, VAULT_Z_MAX - 1.0);
+    urn.castShadow = true;
+    scene.add(urn);
+  }
+
+  // wall torch (cool blue mystic light to feel "secret")
+  const torch = new THREE.PointLight(0x6a8aa8, 1.4, 8, 1.5);
+  torch.position.set(0, -0.8, VAULT_Z_MIN + 0.5);
+  scene.add(torch);
+  // visible torch sphere
+  const torchSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.12, 10, 8),
+    new THREE.MeshBasicMaterial({ color: 0x9ab4d8 })
+  );
+  torchSphere.position.set(0, -0.8, VAULT_Z_MIN + 0.5);
+  scene.add(torchSphere);
+}
+
+// =====================================================================
+// LIGHTING
+// =====================================================================
+scene.add(new THREE.AmbientLight(0x1a1830, 0.45));
+
+const fireLight = new THREE.PointLight(0xff6818, 9, 22, 1.5);
 fireLight.position.set(0, 2.0, 0);
 fireLight.castShadow = true;
 fireLight.shadow.mapSize.set(1024, 1024);
 fireLight.shadow.bias = -0.0008;
 scene.add(fireLight);
 
-// moonlight from oculus — cool shaft
-const moonLight = new THREE.SpotLight(0x9ab4d8, 6, 30, Math.PI / 14, 0.4, 1);
+const moonLight = new THREE.SpotLight(0x9ab4d8, 7, 35, Math.PI / 14, 0.4, 1);
 moonLight.position.set(0, 18, 0);
 moonLight.target.position.set(0, 0, 0);
-moonLight.castShadow = true;
-moonLight.shadow.mapSize.set(1024, 1024);
 scene.add(moonLight);
 scene.add(moonLight.target);
 
-// sconce torches on every other pillar
+// 8 wall sconces around the inside of the outer wall
 const sconces = [];
-for (let i = 0; i < 8; i += 2) {
-  const angle = (i / 8) * Math.PI * 2;
-  const x = Math.cos(angle) * (pillarRadius - 0.6);
-  const z = Math.sin(angle) * (pillarRadius - 0.6);
-
-  const sconceMat = new THREE.MeshStandardMaterial({ color: 0xff7020, emissive: 0xff5010, emissiveIntensity: 1.5 });
-  const sconceGeo = new THREE.SphereGeometry(0.18, 12, 8);
-  const sconce = new THREE.Mesh(sconceGeo, sconceMat);
-  sconce.position.set(x, 4.5, z);
-  scene.add(sconce);
-
-  const light = new THREE.PointLight(0xff7020, 1.8, 10, 1.8);
+for (let i = 0; i < 8; i++) {
+  const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+  const x = Math.cos(a) * 12.5;
+  const z = Math.sin(a) * 12.5;
+  // skip the sconce if it's at the south entrance gap
+  if (Math.abs(a - Math.PI/2) < entranceArc) continue;
+  const s = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 10, 8),
+    new THREE.MeshBasicMaterial({ color: 0xff8530 })
+  );
+  s.position.set(x, 4.5, z);
+  scene.add(s);
+  const light = new THREE.PointLight(0xff7020, 1.6, 10, 1.7);
   light.position.set(x, 4.5, z);
   scene.add(light);
-  sconces.push({ light, base: 1.8 });
+  sconces.push({ light, base: 1.6 });
 }
 
-// ─── moonlight beam (visible volume) through oculus ───
-const beamGeo = new THREE.CylinderGeometry(0.4, 1.6, 14, 24, 1, true);
-const beamMat = new THREE.MeshBasicMaterial({
-  color: 0xa8c6e8,
-  transparent: true,
-  opacity: 0.08,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-  side: THREE.DoubleSide,
-});
-const beam = new THREE.Mesh(beamGeo, beamMat);
+// moonlight beam through oculus
+const beam = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.4, 1.6, 14, 24, 1, true),
+  new THREE.MeshBasicMaterial({
+    color: 0xa8c6e8, transparent:true, opacity:0.08,
+    blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide,
+  })
+);
 beam.position.set(0, 7, 0);
 scene.add(beam);
 
-// ─── smoke / dust particles rising ───
+// =====================================================================
+// PARTICLES — smoke + dust
+// =====================================================================
 const smokeCount = 200;
 const smokeGeo = new THREE.BufferGeometry();
 const smokePos = new Float32Array(smokeCount * 3);
 const smokeSeed = [];
-for (let i = 0; i < smokeCount; i++) {
-  smokePos[i*3 + 0] = (Math.random() - 0.5) * 0.8;
-  smokePos[i*3 + 1] = 2 + Math.random() * 12;
-  smokePos[i*3 + 2] = (Math.random() - 0.5) * 0.8;
-  smokeSeed.push(Math.random() * 10);
+for (let i=0;i<smokeCount;i++) {
+  smokePos[i*3+0] = (Math.random()-0.5)*0.8;
+  smokePos[i*3+1] = 2 + Math.random()*12;
+  smokePos[i*3+2] = (Math.random()-0.5)*0.8;
+  smokeSeed.push(Math.random()*10);
 }
 smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePos, 3));
-const smokeMat = new THREE.PointsMaterial({
-  color: 0xffaa70,
-  size: 0.08,
-  transparent: true,
-  opacity: 0.45,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-});
-const smoke = new THREE.Points(smokeGeo, smokeMat);
+const smoke = new THREE.Points(smokeGeo, new THREE.PointsMaterial({
+  color: 0xffaa70, size: 0.08, transparent:true, opacity:0.45,
+  blending:THREE.AdditiveBlending, depthWrite:false,
+}));
 scene.add(smoke);
 
-// dust motes throughout
-const dustCount = 300;
+const dustCount = 350;
 const dustGeo = new THREE.BufferGeometry();
 const dustPos = new Float32Array(dustCount * 3);
 const dustSeed = [];
-for (let i = 0; i < dustCount; i++) {
-  dustPos[i*3 + 0] = (Math.random() - 0.5) * 22;
-  dustPos[i*3 + 1] = Math.random() * 7;
-  dustPos[i*3 + 2] = (Math.random() - 0.5) * 22;
-  dustSeed.push(Math.random() * 10);
+for (let i=0;i<dustCount;i++) {
+  dustPos[i*3+0] = (Math.random()-0.5)*22;
+  dustPos[i*3+1] = Math.random()*7;
+  dustPos[i*3+2] = (Math.random()-0.5)*22;
+  dustSeed.push(Math.random()*10);
 }
 dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
-const dustMat = new THREE.PointsMaterial({
-  color: 0xc9a8d8,
-  size: 0.04,
-  transparent: true,
-  opacity: 0.3,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-});
-const dust = new THREE.Points(dustGeo, dustMat);
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+  color: 0xc9a8d8, size: 0.04, transparent:true, opacity:0.3,
+  blending:THREE.AdditiveBlending, depthWrite:false,
+}));
 scene.add(dust);
 
-// ─── movement state ───
+// =====================================================================
+// MOVEMENT + COLLISION
+// =====================================================================
 const move = { fwd:false, back:false, left:false, right:false, run:false };
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
@@ -461,92 +887,227 @@ document.addEventListener('keyup', (e) => {
   }
 });
 
-// ─── touch joysticks ───
+// touch joysticks
 const joyMove = { active:false, x:0, y:0, id:null, el:document.getElementById('joyMove'), stick:document.getElementById('stickMove') };
 const joyLook = { active:false, x:0, y:0, id:null, el:document.getElementById('joyLook'), stick:document.getElementById('stickLook') };
 
 function setupJoy(joy) {
-  const rect = () => joy.el.getBoundingClientRect();
   const reset = () => { joy.active = false; joy.x = joy.y = 0; joy.id = null; joy.stick.style.transform = 'translate(-50%,-50%)'; };
-
   joy.el.addEventListener('touchstart', (e) => {
     e.preventDefault();
     const t = e.changedTouches[0];
     joy.active = true; joy.id = t.identifier;
     update(t);
   }, { passive: false });
-
   document.addEventListener('touchmove', (e) => {
     if (!joy.active) return;
-    for (const t of e.changedTouches) {
-      if (t.identifier === joy.id) { update(t); break; }
-    }
+    for (const t of e.changedTouches) if (t.identifier === joy.id) { update(t); break; }
   }, { passive: false });
-
   document.addEventListener('touchend', (e) => {
-    for (const t of e.changedTouches) {
-      if (t.identifier === joy.id) { reset(); break; }
-    }
+    for (const t of e.changedTouches) if (t.identifier === joy.id) { reset(); break; }
   });
   document.addEventListener('touchcancel', reset);
 
   function update(t) {
-    const r = rect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-    let dx = t.clientX - cx;
-    let dy = t.clientY - cy;
-    const max = r.width / 2;
+    const r = joy.el.getBoundingClientRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    let dx = t.clientX - cx, dy = t.clientY - cy;
+    const max = r.width/2;
     const len = Math.hypot(dx, dy);
-    if (len > max) { dx = dx / len * max; dy = dy / len * max; }
-    joy.x = dx / max;
-    joy.y = dy / max;
+    if (len > max) { dx = dx/len*max; dy = dy/len*max; }
+    joy.x = dx/max; joy.y = dy/max;
     joy.stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   }
 }
 setupJoy(joyMove);
 setupJoy(joyLook);
 
-// ─── reset button ───
 document.getElementById('resetBtn').addEventListener('click', () => {
-  controls.getObject().position.set(0, 1.7, 11);
+  controls.getObject().position.set(0, 1.7, 18);
   camera.rotation.set(0, 0, 0);
 });
 
-// ─── collision: stay inside outer wall, outside altar ───
-const wallR = 12.4;
-const altarR = 1.6;
-function constrainPosition(pos) {
-  const r = Math.hypot(pos.x, pos.z);
-  if (r > wallR) {
-    pos.x *= wallR / r;
-    pos.z *= wallR / r;
-  } else if (r < altarR) {
-    if (r < 0.001) { pos.x = altarR; }
-    else { pos.x *= altarR / r; pos.z *= altarR / r; }
-  }
-  // pillar collisions
-  for (const p of pillars) {
-    const dx = pos.x - p.x, dz = pos.z - p.z;
-    const d = Math.hypot(dx, dz);
-    const minD = 0.85;
-    if (d < minD && d > 0.001) {
-      pos.x = p.x + dx / d * minD;
-      pos.z = p.z + dz / d * minD;
+// ─── COLLISION MODEL ──────────────────────────────────────────────────
+// Define free regions. A point is valid if it's inside any free region
+// AND not inside any obstacle (pillar, altar).
+//
+// Free regions are AABBs in (x, z). Outer wall is approximated by a
+// circle radius 13.7 (slightly inside the actual wall at 14).
+
+const FREE = [
+  // outer plaza around south entrance
+  { type:'rect', xmin:-3.0, xmax:3.0, zmin:13, zmax:35 },
+  // inside main sanctum: a circle (radius 13)
+  { type:'circle', cx:0, cz:0, r:13 },
+  // artifact storage room
+  { type:'rect', xmin:-12, xmax:-6.29, zmin:-10.86, zmax:-5.71 },
+  // doorway connector for artifact storage
+  { type:'rect', xmin:-7.3, xmax:-5.5, zmin:-8, zmax:-6.4 },
+  // priest quarters
+  { type:'rect', xmin:5.14, xmax:11.43, zmin:-11.43, zmax:-4.57 },
+  // doorway connector for priest quarters
+  { type:'rect', xmin:5.0, xmax:7.5, zmin:-7.5, zmax:-5.9 },
+  // prayer hall
+  { type:'rect', xmin:2.86, xmax:12, zmin:2.86, zmax:10.86 },
+  // doorway connector for prayer hall
+  { type:'rect', xmin:1.5, xmax:4.5, zmin:4.5, zmax:6.5 },
+  // stairs going down
+  { type:'rect', xmin:-1.2, xmax:1.2, zmin:STAIRS_TOP_Z, zmax:STAIRS_BOT_Z },
+  // vault chamber
+  { type:'rect', xmin:VAULT_X_MIN, xmax:VAULT_X_MAX, zmin:VAULT_Z_MIN, zmax:VAULT_Z_MAX },
+];
+
+const PADDING = 0.45;
+
+function pointInFree(x, z) {
+  for (const f of FREE) {
+    if (f.type === 'rect') {
+      if (x >= f.xmin + PADDING && x <= f.xmax - PADDING &&
+          z >= f.zmin + PADDING && z <= f.zmax - PADDING) return true;
+    } else if (f.type === 'circle') {
+      if (Math.hypot(x - f.cx, z - f.cz) <= f.r - PADDING) return true;
     }
   }
+  return false;
 }
 
-// ─── animation loop ───
+function pointBlocked(x, z) {
+  // altar
+  if (Math.hypot(x, z) < 1.6) return true;
+  // pillars
+  for (const p of pillars) {
+    if (Math.hypot(x - p.x, z - p.z) < 0.85) return true;
+  }
+  return false;
+}
+
+function tryMove(curX, curZ, newX, newZ) {
+  // Try full move
+  if (pointInFree(newX, newZ) && !pointBlocked(newX, newZ)) return [newX, newZ];
+  // Try x only
+  if (pointInFree(newX, curZ) && !pointBlocked(newX, curZ)) return [newX, curZ];
+  // Try z only
+  if (pointInFree(curX, newZ) && !pointBlocked(curX, newZ)) return [curX, newZ];
+  return [curX, curZ];
+}
+
+// ─── ELEVATION (stairs + vault) ───────────────────────────────────────
+function getFloorY(x, z) {
+  // vault chamber
+  if (x >= VAULT_X_MIN && x <= VAULT_X_MAX && z >= STAIRS_BOT_Z && z <= VAULT_Z_MAX) {
+    return VAULT_FLOOR_Y;
+  }
+  // stairs (smooth interpolation)
+  if (x >= -1.2 && x <= 1.2 && z >= STAIRS_TOP_Z && z <= STAIRS_BOT_Z) {
+    const t = (z - STAIRS_TOP_Z) / (STAIRS_BOT_Z - STAIRS_TOP_Z);
+    return STAIRS_TOP_Y + t * (STAIRS_BOT_Y - STAIRS_TOP_Y);
+  }
+  return 0;
+}
+
+// ─── ROOM LABELS ──────────────────────────────────────────────────────
+function getRoomName(x, z) {
+  if (x >= VAULT_X_MIN && x <= VAULT_X_MAX && z >= STAIRS_BOT_Z && z <= VAULT_Z_MAX) return '🔒 Underground Vault';
+  if (x >= -1.2 && x <= 1.2 && z >= STAIRS_TOP_Z && z <= STAIRS_BOT_Z) return '⤓ Stairs Down';
+  if (x >= -12 && x <= -6.29 && z >= -10.86 && z <= -5.71) return '📜 Artifact Storage';
+  if (x >= 5.14 && x <= 11.43 && z >= -11.43 && z <= -4.57) return '🛏 Priest Quarters';
+  if (x >= 2.86 && x <= 12 && z >= 2.86 && z <= 10.86) return '🕯 Prayer Hall';
+  if (Math.hypot(x, z) <= 13) return '🔥 Sacred Fire Sanctum';
+  return '🌙 Outside the Temple';
+}
+
+// =====================================================================
+// MINIMAP — load floor plan image as background
+// =====================================================================
+const minimapCanvas = document.getElementById('minimap');
+const mctx = minimapCanvas.getContext('2d');
+const mapImg = new Image();
+let mapImgReady = false;
+mapImg.onload = () => { mapImgReady = true; };
+mapImg.onerror = () => { console.warn('minimap image failed to load'); };
+mapImg.src = 'assets/floor-temple-eternity.png';
+
+// World→map calibration: outer wall radius 14m maps to 500 px on the source map.
+// Map is 1600×1600 with center at (800, 800).
+// We render a 220×220 crop centered on the temple (covers ±13m).
+const MAP_SCALE_PX_PER_M = 35.7; // (500/14)
+const MAP_CENTER = 800;
+const MM_SIZE = 220;
+const MM_VIEW_M = 16; // half-width of view in meters = ±16m
+function worldToMM(x, z) {
+  // Map x,z (meters) to minimap px
+  const px_per_m = (MM_SIZE / 2) / MM_VIEW_M;
+  return [MM_SIZE/2 + x * px_per_m, MM_SIZE/2 + z * px_per_m];
+}
+
+function drawMinimap(playerX, playerZ, playerYaw) {
+  mctx.clearRect(0, 0, MM_SIZE, MM_SIZE);
+
+  // Background: cropped portion of the floor plan image
+  if (mapImgReady) {
+    // We want to show ±16m which on the source map is ±16*35.7 = 571 px
+    const srcRadius_px = MM_VIEW_M * MAP_SCALE_PX_PER_M;
+    const sx = MAP_CENTER - srcRadius_px;
+    const sy = MAP_CENTER - srcRadius_px;
+    const sw = srcRadius_px * 2;
+    const sh = srcRadius_px * 2;
+    mctx.drawImage(mapImg, sx, sy, sw, sh, 0, 0, MM_SIZE, MM_SIZE);
+  } else {
+    mctx.fillStyle = '#1a120c';
+    mctx.fillRect(0, 0, MM_SIZE, MM_SIZE);
+  }
+
+  // Faint dark overlay for readability
+  mctx.fillStyle = 'rgba(0,0,0,0.18)';
+  mctx.fillRect(0, 0, MM_SIZE, MM_SIZE);
+
+  // Player position dot + facing arrow
+  const [px, py] = worldToMM(playerX, playerZ);
+  // facing arrow (triangle in direction of yaw)
+  mctx.save();
+  mctx.translate(px, py);
+  // yaw is rotation around y-axis, with 0 = facing -z (north). atan2 returns in standard math; let me match.
+  mctx.rotate(playerYaw);
+  mctx.fillStyle = '#ff5028';
+  mctx.beginPath();
+  mctx.moveTo(0, -10);
+  mctx.lineTo(6, 6);
+  mctx.lineTo(0, 3);
+  mctx.lineTo(-6, 6);
+  mctx.closePath();
+  mctx.fill();
+  // outline
+  mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.2; mctx.stroke();
+  mctx.restore();
+
+  // N indicator
+  mctx.save();
+  mctx.font = 'bold 12px Cinzel, serif';
+  mctx.fillStyle = '#c9a227';
+  mctx.textAlign = 'center';
+  mctx.fillText('N', MM_SIZE/2, 14);
+  mctx.beginPath();
+  mctx.moveTo(MM_SIZE/2, 18);
+  mctx.lineTo(MM_SIZE/2 - 4, 26);
+  mctx.lineTo(MM_SIZE/2 + 4, 26);
+  mctx.closePath();
+  mctx.fillStyle = '#c9a227'; mctx.fill();
+  mctx.restore();
+}
+
+// =====================================================================
+// ANIMATION LOOP
+// =====================================================================
 const clock = new THREE.Clock();
 let t = 0;
+let lastRoom = '';
 
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
   t += dt;
 
-  // ── movement ──
+  // movement
   const speed = move.run ? 7.5 : 4.0;
   velocity.x -= velocity.x * 10 * dt;
   velocity.z -= velocity.z * 10 * dt;
@@ -554,74 +1115,102 @@ function animate() {
   direction.z = (move.fwd ? 1 : 0) - (move.back ? 1 : 0);
   direction.x = (move.right ? 1 : 0) - (move.left ? 1 : 0);
 
-  // touch input adds to direction
   if (isTouch && joyMove.active) {
     direction.z += -joyMove.y;
     direction.x += joyMove.x;
   }
-  direction.normalize();
+  if (direction.lengthSq() > 1) direction.normalize();
 
   if (direction.lengthSq() > 0) {
     velocity.z -= direction.z * speed * dt * 10;
     velocity.x -= direction.x * speed * dt * 10;
   }
 
-  if (controls.isLocked || isTouch) {
-    controls.moveRight(-velocity.x * dt);
-    controls.moveForward(-velocity.z * dt);
-  }
+  const obj = controls.getObject();
 
-  // touch look (right joystick → yaw + pitch)
+  // touch look
   if (isTouch && joyLook.active) {
-    const obj = controls.getObject();
     obj.rotation.y -= joyLook.x * 0.04;
     camera.rotation.x -= joyLook.y * 0.04;
-    camera.rotation.x = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, camera.rotation.x));
+    camera.rotation.x = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, camera.rotation.x));
   }
 
-  // collision
-  const obj = controls.getObject();
-  constrainPosition(obj.position);
-  obj.position.y = 1.7;
+  if (controls.isLocked || isTouch) {
+    // candidate next position
+    const oldX = obj.position.x, oldZ = obj.position.z;
 
-  // ── flame flicker ──
-  const flick = 1 + Math.sin(t * 12) * 0.08 + Math.sin(t * 27) * 0.05 + (Math.random() - 0.5) * 0.06;
-  flame.scale.set(flick, 0.9 + flick * 0.15, flick);
-  flameInner.scale.set(flick * 0.95, 1 + (flick - 1) * 0.4, flick * 0.95);
-  flame.rotation.y = Math.sin(t * 2) * 0.05;
-  flameInner.rotation.y = -Math.sin(t * 3) * 0.06;
-  fireLight.intensity = 7 + Math.sin(t * 9) * 0.8 + (Math.random() - 0.5) * 0.5;
+    // figure out velocity in world axes (PointerLock applies it via moveRight/moveForward)
+    // We'll apply movement manually for consistent collision
+    const fwdAmount = -velocity.z * dt;
+    const rightAmount = -velocity.x * dt;
+    // forward = (-sin(yaw), -cos(yaw)), right = (cos(yaw), -sin(yaw))
+    const yaw = obj.rotation.y;
+    const fx = -Math.sin(yaw) * fwdAmount + Math.cos(yaw) * rightAmount;
+    const fz = -Math.cos(yaw) * fwdAmount - Math.sin(yaw) * rightAmount;
+    let newX = oldX + fx;
+    let newZ = oldZ + fz;
+    const [resX, resZ] = tryMove(oldX, oldZ, newX, newZ);
+    obj.position.x = resX;
+    obj.position.z = resZ;
+  }
+
+  // elevation
+  obj.position.y = getFloorY(obj.position.x, obj.position.z) + 1.7;
+
+  // room label
+  const room = getRoomName(obj.position.x, obj.position.z);
+  if (room !== lastRoom) {
+    roomLabelEl.textContent = room;
+    lastRoom = room;
+  }
+
+  // flame flicker
+  const flick = 1 + Math.sin(t*12)*0.08 + Math.sin(t*27)*0.05 + (Math.random()-0.5)*0.06;
+  flame.scale.set(flick, 0.9 + flick*0.15, flick);
+  flameInner.scale.set(flick*0.95, 1 + (flick-1)*0.4, flick*0.95);
+  flame.rotation.y = Math.sin(t*2) * 0.05;
+  flameInner.rotation.y = -Math.sin(t*3) * 0.06;
+  fireLight.intensity = 8 + Math.sin(t*9)*0.8 + (Math.random()-0.5)*0.5;
 
   // sconce flicker
   for (const s of sconces) {
-    s.light.intensity = s.base + Math.sin(t * 11 + s.base) * 0.3 + (Math.random() - 0.5) * 0.2;
+    s.light.intensity = s.base + Math.sin(t*11 + s.base) * 0.3 + (Math.random()-0.5)*0.2;
   }
 
-  // ── smoke rise ──
+  // smoke rise
   const sp = smoke.geometry.attributes.position.array;
-  for (let i = 0; i < smokeCount; i++) {
-    sp[i*3 + 1] += 0.025 + Math.sin(t + smokeSeed[i]) * 0.005;
-    sp[i*3 + 0] += Math.sin(t * 0.7 + smokeSeed[i]) * 0.004;
-    sp[i*3 + 2] += Math.cos(t * 0.6 + smokeSeed[i]) * 0.004;
-    if (sp[i*3 + 1] > 16) {
-      sp[i*3 + 1] = 2;
-      sp[i*3 + 0] = (Math.random() - 0.5) * 0.8;
-      sp[i*3 + 2] = (Math.random() - 0.5) * 0.8;
+  for (let i=0;i<smokeCount;i++) {
+    sp[i*3+1] += 0.025 + Math.sin(t + smokeSeed[i]) * 0.005;
+    sp[i*3+0] += Math.sin(t*0.7 + smokeSeed[i]) * 0.004;
+    sp[i*3+2] += Math.cos(t*0.6 + smokeSeed[i]) * 0.004;
+    if (sp[i*3+1] > 16) {
+      sp[i*3+1] = 2;
+      sp[i*3+0] = (Math.random()-0.5)*0.8;
+      sp[i*3+2] = (Math.random()-0.5)*0.8;
     }
   }
   smoke.geometry.attributes.position.needsUpdate = true;
 
-  // ── dust drift ──
+  // dust drift
   const dp = dust.geometry.attributes.position.array;
-  for (let i = 0; i < dustCount; i++) {
-    dp[i*3 + 1] += Math.sin(t * 0.5 + dustSeed[i]) * 0.003;
-    dp[i*3 + 0] += Math.sin(t * 0.3 + dustSeed[i]) * 0.002;
-    if (dp[i*3 + 1] > 7) dp[i*3 + 1] = 0;
-    if (dp[i*3 + 1] < 0) dp[i*3 + 1] = 7;
+  for (let i=0;i<dustCount;i++) {
+    dp[i*3+1] += Math.sin(t*0.5 + dustSeed[i]) * 0.003;
+    dp[i*3+0] += Math.sin(t*0.3 + dustSeed[i]) * 0.002;
+    if (dp[i*3+1] > 7) dp[i*3+1] = 0;
+    if (dp[i*3+1] < 0) dp[i*3+1] = 7;
   }
   dust.geometry.attributes.position.needsUpdate = true;
 
   renderer.render(scene, camera);
+
+  // minimap (use yaw — atan2 of facing direction)
+  // camera looks down -z in default; yaw rotates around y; so facing dir = (sin(yaw), 0, -cos(yaw))? actually for PointerLock the player object yaw rotates around y. canvas rotation: 0 = arrow pointing UP (north = -z). To rotate so arrow points in player's facing direction:
+  // playerYaw to use in canvas: camera looks along -z when yaw=0, arrow points -y on canvas (up). But our minimap has +z (south) going DOWN on canvas, so when player faces -z (north), arrow points up = canvas rotation 0.
+  // Player's actual yaw (around y, CCW from +z when looking down): controls.getObject().rotation.y
+  // When yaw=0: player looks toward -z (north). So arrow should point UP (canvas angle 0).
+  // When yaw=π/2 (CCW): player looks toward -x (west). Arrow should point LEFT (canvas angle -π/2).
+  // mctx.rotate uses CW rotation in canvas (since y is flipped). So canvas-rotate by -yaw gives correct direction.
+  drawMinimap(obj.position.x, obj.position.z, -obj.rotation.y);
 }
 animate();
 
