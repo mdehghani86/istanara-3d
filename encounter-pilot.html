@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Istanara — Encounter Pilot</title>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; background:#06060a; color:#f5f5f5; font-family:'Outfit', sans-serif; overflow:hidden; }
+  canvas { display:block; }
+  .hud { position:fixed; top:14px; left:14px; z-index:10; background:rgba(8,8,14,0.7); backdrop-filter:blur(12px); padding:10px 14px; border-radius:10px; border:1px solid rgba(245,245,245,0.08); font-size:0.78rem; line-height:1.6; pointer-events:none; }
+  .hud .name { color:#c9a227; font-weight:700; font-size:0.9rem; letter-spacing:0.06em; }
+  .hud .hint { color:rgba(245,245,245,0.55); font-size:0.7rem; margin-top:4px; }
+  .nameplate { position:fixed; top:50%; right:24px; transform:translateY(-50%); writing-mode:vertical-rl; font-family:serif; font-size:1.2rem; letter-spacing:0.5em; color:rgba(255,170,170,0.45); pointer-events:none; user-select:none; }
+  .controls { position:fixed; bottom:14px; left:14px; z-index:10; display:flex; gap:8px; }
+  .btn { background:rgba(8,8,14,0.7); backdrop-filter:blur(12px); padding:8px 14px; border-radius:8px; border:1px solid rgba(245,245,245,0.1); color:#f5f5f5; font-family:'Outfit', sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .btn:hover { background:rgba(184,67,26,0.5); border-color:#b8431a; }
+  .strike-flash { position:fixed; inset:0; background:rgba(255,80,40,0.6); pointer-events:none; opacity:0; transition:opacity 0.1s; z-index:9; }
+  .strike-flash.on { opacity:1; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div class="hud">
+  <div class="name">⚔ KHAJUYAN COMMANDER</div>
+  <div>HP 60 · AC 16 · CR 4</div>
+  <div class="hint">drag to orbit · scroll to zoom · click STRIKE to attack</div>
+</div>
+<div class="nameplate">KHAJUYAN</div>
+<div class="controls">
+  <button class="btn" id="strikeBtn">⚔ STRIKE</button>
+  <button class="btn" id="resetBtn">⟲ Reset Camera</button>
+  <a href="./" class="btn" style="text-decoration:none">← back</a>
+</div>
+<div class="strike-flash" id="flash"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ─── scene setup ───
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x06060a);
+scene.fog = new THREE.FogExp2(0x06060a, 0.045);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 2.8, 8);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.target.set(0, 2, 0);
+controls.minDistance = 4;
+controls.maxDistance = 14;
+controls.maxPolarAngle = Math.PI * 0.55;
+controls.minPolarAngle = Math.PI * 0.18;
+
+// ─── lights ───
+scene.add(new THREE.AmbientLight(0x1a1620, 0.5));
+
+// flickering torch — warm key light
+const torch = new THREE.PointLight(0xff8a3c, 6, 25, 1.4);
+torch.position.set(-3.5, 5, 4);
+torch.castShadow = true;
+torch.shadow.mapSize.set(1024, 1024);
+torch.shadow.bias = -0.0008;
+scene.add(torch);
+
+// cool rim light from the other side (moonlight)
+const rim = new THREE.DirectionalLight(0x6a8aa8, 0.8);
+rim.position.set(5, 6, -3);
+scene.add(rim);
+
+// ─── ground ───
+const groundGeo = new THREE.PlaneGeometry(40, 40, 1, 1);
+const groundMat = new THREE.MeshStandardMaterial({
+  color: 0x1a1014,
+  roughness: 0.85,
+  metalness: 0.1,
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// faint Persian tile ring underneath the figure (decorative)
+const ringGeo = new THREE.RingGeometry(1.6, 1.9, 64);
+const ringMat = new THREE.MeshStandardMaterial({
+  color: 0xc9a227,
+  emissive: 0x6a4818,
+  emissiveIntensity: 0.4,
+  roughness: 0.6,
+  side: THREE.DoubleSide,
+});
+const ring = new THREE.Mesh(ringGeo, ringMat);
+ring.rotation.x = -Math.PI / 2;
+ring.position.y = 0.005;
+scene.add(ring);
+
+// ─── back wall (suggestion of a stone arch) ───
+const wallGeo = new THREE.PlaneGeometry(20, 12);
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a1612, roughness: 0.95 });
+const wall = new THREE.Mesh(wallGeo, wallMat);
+wall.position.set(0, 6, -7);
+wall.receiveShadow = true;
+scene.add(wall);
+
+// ─── load Khajuyan Commander as a billboard ───
+const loader = new THREE.TextureLoader();
+loader.load('assets/khajuyan-commander.png', (tex) => {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  // Aspect from texture
+  const aspect = tex.image.width / tex.image.height;
+  const height = 5;
+  const width = height * aspect;
+  const billboardGeo = new THREE.PlaneGeometry(width, height);
+  const billboardMat = new THREE.MeshStandardMaterial({
+    map: tex,
+    transparent: true,
+    alphaTest: 0.5,
+    side: THREE.DoubleSide,
+    emissive: 0x331a0a,
+    emissiveIntensity: 0.2,
+  });
+  const billboard = new THREE.Mesh(billboardGeo, billboardMat);
+  billboard.position.set(0, height / 2 + 0.05, 0);
+  billboard.castShadow = true;
+  scene.add(billboard);
+  window.__monster = billboard;
+});
+
+// ─── floating embers ───
+const emberCount = 80;
+const emberGeo = new THREE.BufferGeometry();
+const emberPos = new Float32Array(emberCount * 3);
+const emberSeed = [];
+for (let i = 0; i < emberCount; i++) {
+  emberPos[i*3 + 0] = (Math.random() - 0.5) * 16;
+  emberPos[i*3 + 1] = Math.random() * 10;
+  emberPos[i*3 + 2] = (Math.random() - 0.5) * 10 - 2;
+  emberSeed.push(Math.random() * 10);
+}
+emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPos, 3));
+const emberMat = new THREE.PointsMaterial({
+  color: 0xff8030,
+  size: 0.06,
+  transparent: true,
+  opacity: 0.85,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+});
+const embers = new THREE.Points(emberGeo, emberMat);
+scene.add(embers);
+
+// ─── strike effect ───
+const strikeBtn = document.getElementById('strikeBtn');
+const flash = document.getElementById('flash');
+strikeBtn.addEventListener('click', () => {
+  flash.classList.add('on');
+  setTimeout(() => flash.classList.remove('on'), 90);
+  // shake the monster
+  if (window.__monster) {
+    let t0 = performance.now();
+    const shake = () => {
+      const dt = performance.now() - t0;
+      if (dt > 350) { window.__monster.position.x = 0; return; }
+      window.__monster.position.x = Math.sin(dt * 0.06) * 0.2 * (1 - dt/350);
+      requestAnimationFrame(shake);
+    };
+    shake();
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  camera.position.set(0, 2.8, 8);
+  controls.target.set(0, 2, 0);
+});
+
+// ─── animation loop ───
+let t = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  t += 0.016;
+
+  // torch flicker
+  torch.intensity = 5 + Math.sin(t * 8) * 0.6 + Math.sin(t * 17.3) * 0.4 + (Math.random() - 0.5) * 0.4;
+
+  // ring pulse
+  ring.material.emissiveIntensity = 0.4 + Math.sin(t * 1.4) * 0.15;
+
+  // ember rise
+  const pos = embers.geometry.attributes.position.array;
+  for (let i = 0; i < emberCount; i++) {
+    pos[i*3 + 1] += 0.012 + Math.sin(t + emberSeed[i]) * 0.002;
+    pos[i*3 + 0] += Math.sin(t * 0.5 + emberSeed[i]) * 0.005;
+    if (pos[i*3 + 1] > 10) {
+      pos[i*3 + 1] = 0;
+      pos[i*3 + 0] = (Math.random() - 0.5) * 16;
+    }
+  }
+  embers.geometry.attributes.position.needsUpdate = true;
+
+  // monster billboard always faces camera (billboard effect)
+  if (window.__monster) {
+    window.__monster.lookAt(camera.position.x, window.__monster.position.y, camera.position.z);
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

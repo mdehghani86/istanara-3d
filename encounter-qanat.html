@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Istanara — Qanat Ambush</title>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; background:#02060a; color:#f5f5f5; font-family:'Outfit', sans-serif; overflow:hidden; }
+  canvas { display:block; }
+  .hud { position:fixed; top:14px; left:14px; z-index:10; background:rgba(8,12,20,0.7); backdrop-filter:blur(12px); padding:10px 14px; border-radius:10px; border:1px solid rgba(138,166,200,0.2); font-size:0.78rem; line-height:1.6; pointer-events:none; }
+  .hud .name { color:#8aa6c8; font-weight:700; font-size:0.9rem; letter-spacing:0.06em; }
+  .hud .hint { color:rgba(245,245,245,0.55); font-size:0.7rem; margin-top:4px; }
+  .nameplate { position:fixed; top:50%; right:24px; transform:translateY(-50%); writing-mode:vertical-rl; font-family:serif; font-size:1.2rem; letter-spacing:0.5em; color:rgba(138,166,200,0.5); pointer-events:none; user-select:none; }
+  .controls { position:fixed; bottom:14px; left:14px; z-index:10; display:flex; gap:8px; }
+  .btn { background:rgba(8,12,20,0.7); backdrop-filter:blur(12px); padding:8px 14px; border-radius:8px; border:1px solid rgba(245,245,245,0.1); color:#f5f5f5; font-family:'Outfit', sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .btn:hover { background:rgba(13,125,114,0.5); border-color:#0d7d72; }
+  .strike-flash { position:fixed; inset:0; background:rgba(80,200,255,0.5); pointer-events:none; opacity:0; transition:opacity 0.1s; z-index:9; }
+  .strike-flash.on { opacity:1; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div class="hud">
+  <div class="name">🗡 KHAJUYAN SHADOWBLADE</div>
+  <div>HP 38 · AC 17 · CR 3</div>
+  <div class="hint">drag to orbit · scroll to zoom · click STRIKE</div>
+</div>
+<div class="nameplate">QANAT</div>
+<div class="controls">
+  <button class="btn" id="strikeBtn">🗡 STRIKE</button>
+  <button class="btn" id="resetBtn">⟲ Reset Camera</button>
+  <a href="index.html" class="btn" style="text-decoration:none">← gallery</a>
+</div>
+<div class="strike-flash" id="flash"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x02060a);
+scene.fog = new THREE.FogExp2(0x06101a, 0.06);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 2.4, 8);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.06;
+controls.target.set(0, 1.8, 0);
+controls.minDistance = 4; controls.maxDistance = 14;
+controls.maxPolarAngle = Math.PI * 0.55;
+
+scene.add(new THREE.AmbientLight(0x0a1018, 0.6));
+
+// Cool moonlight from above through a tunnel opening
+const moon = new THREE.PointLight(0x8aa6c8, 4, 20, 1.6);
+moon.position.set(0, 8, 2);
+moon.castShadow = true;
+scene.add(moon);
+
+// Subtle warm flicker — distant lantern
+const lantern = new THREE.PointLight(0x4a3a20, 1.5, 14, 1.4);
+lantern.position.set(4, 1.5, -3);
+scene.add(lantern);
+
+// Stone tunnel arch (curved walls)
+const tunnelGeo = new THREE.CylinderGeometry(6, 6, 14, 32, 1, true, -Math.PI/2, Math.PI);
+const tunnelMat = new THREE.MeshStandardMaterial({
+  color: 0x1a1a1f, roughness: 0.95, side: THREE.BackSide,
+});
+const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
+tunnel.rotation.z = Math.PI/2;
+tunnel.position.y = 3;
+tunnel.receiveShadow = true;
+scene.add(tunnel);
+
+// Floor — wet stone with reflection-ish dark
+const floorGeo = new THREE.PlaneGeometry(40, 40);
+const floorMat = new THREE.MeshStandardMaterial({
+  color: 0x0a0e14, roughness: 0.4, metalness: 0.5,
+});
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Subtle Persian sigil ring under monster (teal accent)
+const ringGeo = new THREE.RingGeometry(1.6, 1.85, 64);
+const ringMat = new THREE.MeshStandardMaterial({
+  color: 0x0d7d72, emissive: 0x0d4a44, emissiveIntensity: 0.6,
+  roughness: 0.5, side: THREE.DoubleSide,
+});
+const ring = new THREE.Mesh(ringGeo, ringMat);
+ring.rotation.x = -Math.PI/2;
+ring.position.y = 0.005;
+scene.add(ring);
+
+// Load the Shadowblade
+new THREE.TextureLoader().load('assets/khajuyan-shadowblade.png', (tex) => {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const aspect = tex.image.width / tex.image.height;
+  const h = 4.5;
+  const w = h * aspect;
+  const geo = new THREE.PlaneGeometry(w, h);
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide,
+    emissive: 0x0a1820, emissiveIntensity: 0.3,
+  });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(0, h/2 + 0.05, 0);
+  m.castShadow = true;
+  scene.add(m);
+  window.__monster = m;
+});
+
+// Mist particles (cool dust drifting through tunnel)
+const mistCount = 120;
+const mistGeo = new THREE.BufferGeometry();
+const mistPos = new Float32Array(mistCount * 3);
+const mistSeed = [];
+for (let i = 0; i < mistCount; i++) {
+  mistPos[i*3] = (Math.random() - 0.5) * 16;
+  mistPos[i*3 + 1] = Math.random() * 6;
+  mistPos[i*3 + 2] = (Math.random() - 0.5) * 12 - 2;
+  mistSeed.push(Math.random() * 10);
+}
+mistGeo.setAttribute('position', new THREE.BufferAttribute(mistPos, 3));
+const mistMat = new THREE.PointsMaterial({
+  color: 0x8aa6c8, size: 0.08, transparent: true, opacity: 0.4,
+  blending: THREE.AdditiveBlending, depthWrite: false,
+});
+const mist = new THREE.Points(mistGeo, mistMat);
+scene.add(mist);
+
+const flash = document.getElementById('flash');
+document.getElementById('strikeBtn').addEventListener('click', () => {
+  flash.classList.add('on');
+  setTimeout(() => flash.classList.remove('on'), 90);
+  if (window.__monster) {
+    let t0 = performance.now();
+    const shake = () => {
+      const dt = performance.now() - t0;
+      if (dt > 350) { window.__monster.position.x = 0; return; }
+      window.__monster.position.x = Math.sin(dt * 0.06) * 0.2 * (1 - dt/350);
+      requestAnimationFrame(shake);
+    };
+    shake();
+  }
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  camera.position.set(0, 2.4, 8); controls.target.set(0, 1.8, 0);
+});
+
+let t = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  t += 0.016;
+  // moon shimmer
+  moon.intensity = 3.5 + Math.sin(t * 1.5) * 0.3;
+  // lantern flicker
+  lantern.intensity = 1.5 + Math.sin(t * 12) * 0.4 + (Math.random() - 0.5) * 0.3;
+  // ring pulse
+  ring.material.emissiveIntensity = 0.6 + Math.sin(t * 1.6) * 0.15;
+  // mist drift
+  const pos = mist.geometry.attributes.position.array;
+  for (let i = 0; i < mistCount; i++) {
+    pos[i*3] += Math.sin(t * 0.3 + mistSeed[i]) * 0.003;
+    pos[i*3 + 1] += 0.004;
+    if (pos[i*3 + 1] > 6) {
+      pos[i*3 + 1] = 0;
+      pos[i*3] = (Math.random() - 0.5) * 16;
+    }
+  }
+  mist.geometry.attributes.position.needsUpdate = true;
+  if (window.__monster) {
+    window.__monster.lookAt(camera.position.x, window.__monster.position.y, camera.position.z);
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

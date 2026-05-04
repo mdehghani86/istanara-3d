@@ -1,0 +1,185 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   ISTANARA TYPOGRAPHY STANDARD — v1.0
+   The one font + size system for the entire platform.
+   Import from every HTML page:
+     <link rel="stylesheet" href="/public/styles/istanara-typography.css">
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* ───── Font families ─────
+       Headings: Cinzel (ancient, serif, ceremonial)
+       Body:     Outfit (modern sans, reads cleanly on dark)
+       Persian:  Vazirmatn (RTL, matches Outfit's weight) */
+    --font-heading: 'Cinzel', 'Trajan Pro', Georgia, serif;
+    --font-body:    'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-persian: 'Vazirmatn', 'Tahoma', sans-serif;
+    --font-mono:    'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+    /* ───── Font size scale (18px base) ─────
+       Every size is a rem so the scale compounds cleanly.
+       Use these tokens everywhere. Do not hardcode px or sub-rem sizes. */
+    --fs-xs:    0.875rem;  /* 14px — tiny meta, tags, captions, footnotes */
+    --fs-sm:    1rem;      /* 16px — nav links, small buttons, labels */
+    --fs-base:  1.125rem;  /* 18px — BODY DEFAULT (paragraphs, lists) */
+    --fs-md:    1.25rem;   /* 20px — emphasized body, large buttons */
+    --fs-lg:    1.5rem;    /* 24px — sub-headings, card titles */
+    --fs-xl:    2rem;      /* 32px — section headings */
+    --fs-2xl:   2.75rem;   /* 44px — page titles */
+    --fs-hero:  clamp(2.5rem, 5vw, 5rem);  /* responsive hero titles */
+
+    /* ───── Line heights ───── */
+    --lh-tight:   1.15;   /* headings */
+    --lh-snug:    1.35;   /* sub-headings, buttons */
+    --lh-normal:  1.6;    /* body copy */
+    --lh-loose:   1.75;   /* long-form prose */
+
+    /* ───── Letter spacing ───── */
+    --ls-tight:   -0.01em;
+    --ls-normal:   0;
+    --ls-wide:     0.08em;   /* small caps, button labels */
+    --ls-wider:    0.18em;   /* logo-style */
+
+    /* ───── Font weights ───── */
+    --fw-light:    300;
+    --fw-regular:  400;
+    --fw-medium:   500;
+    --fw-semibold: 600;
+    --fw-bold:     700;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   BASE RULES
+   Applied to every page that imports this file.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+html {
+    font-size: 16px;  /* keeps rem math simple; 1rem = 16px */
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: var(--fs-base);     /* 18px default body */
+    line-height: var(--lh-normal);
+    font-weight: var(--fw-regular);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* ───── Headings: Cinzel, tight ───── */
+h1, h2, h3, h4, h5, h6,
+.heading {
+    font-family: var(--font-heading);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-tight);
+    letter-spacing: var(--ls-tight);
+}
+
+h1 { font-size: var(--fs-2xl); }   /* 44px */
+h2 { font-size: var(--fs-xl); }    /* 32px */
+h3 { font-size: var(--fs-lg); }    /* 24px */
+h4 { font-size: var(--fs-md); }    /* 20px */
+h5 { font-size: var(--fs-base); }  /* 18px */
+h6 { font-size: var(--fs-sm); letter-spacing: var(--ls-wide); text-transform: uppercase; }
+
+/* ───── Paragraphs & body copy ───── */
+p,
+li,
+dd,
+blockquote {
+    font-size: var(--fs-base);
+    line-height: var(--lh-normal);
+}
+
+small,
+.text-xs { font-size: var(--fs-xs); }
+.text-sm { font-size: var(--fs-sm); }
+.text-md { font-size: var(--fs-md); }
+.text-lg { font-size: var(--fs-lg); }
+
+/* ───── Links ───── */
+a {
+    font-size: inherit;
+    font-weight: var(--fw-medium);
+}
+
+/* ───── Buttons ───── */
+button,
+.btn,
+input[type="button"],
+input[type="submit"] {
+    font-family: var(--font-body);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    line-height: var(--lh-snug);
+}
+
+.btn-lg   { font-size: var(--fs-md); }
+.btn-sm   { font-size: var(--fs-xs); }
+
+/* ───── Inputs ───── */
+input,
+textarea,
+select {
+    font-family: var(--font-body);
+    font-size: var(--fs-base);
+    line-height: var(--lh-snug);
+}
+
+/* ───── Persian / RTL ───── */
+[lang="fa"],
+[dir="rtl"],
+.persian {
+    font-family: var(--font-persian);
+}
+
+/* ───── Code ───── */
+code, pre, kbd, samp {
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   Use these when you cannot apply a semantic tag.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.font-heading  { font-family: var(--font-heading) !important; }
+.font-body     { font-family: var(--font-body) !important; }
+.font-persian  { font-family: var(--font-persian) !important; }
+
+.fw-light      { font-weight: var(--fw-light); }
+.fw-regular    { font-weight: var(--fw-regular); }
+.fw-medium     { font-weight: var(--fw-medium); }
+.fw-semibold   { font-weight: var(--fw-semibold); }
+.fw-bold       { font-weight: var(--fw-bold); }
+
+.tracking-tight   { letter-spacing: var(--ls-tight); }
+.tracking-normal  { letter-spacing: var(--ls-normal); }
+.tracking-wide    { letter-spacing: var(--ls-wide); }
+.tracking-wider   { letter-spacing: var(--ls-wider); }
+
+.leading-tight    { line-height: var(--lh-tight); }
+.leading-snug     { line-height: var(--lh-snug); }
+.leading-normal   { line-height: var(--lh-normal); }
+.leading-loose    { line-height: var(--lh-loose); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE SCALING
+   Gently shrink the scale on phones so layouts don't break.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    :root {
+        --fs-xs:   0.8125rem;  /* 13px */
+        --fs-sm:   0.9375rem;  /* 15px */
+        --fs-base: 1rem;       /* 16px — still readable */
+        --fs-md:   1.125rem;   /* 18px */
+        --fs-lg:   1.3125rem;  /* 21px */
+        --fs-xl:   1.75rem;    /* 28px */
+        --fs-2xl:  2.25rem;    /* 36px */
+    }
+}

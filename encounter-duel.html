@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Istanara — Duel: Sangin vs Khajuyan Commander</title>
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; background:#0a0608; color:#f5f5f5; font-family:'Outfit', sans-serif; overflow:hidden; }
+  canvas { display:block; }
+  .hud { position:fixed; top:14px; z-index:10; background:rgba(8,4,8,0.7); backdrop-filter:blur(12px); padding:10px 14px; border-radius:10px; border:1px solid rgba(245,245,245,0.08); font-size:0.78rem; line-height:1.6; pointer-events:none; min-width:180px; }
+  .hud.left { left:14px; border-color:rgba(184,67,26,0.3); }
+  .hud.left .name { color:#e08555; }
+  .hud.right { right:14px; text-align:right; border-color:rgba(13,125,114,0.3); }
+  .hud.right .name { color:#3eb8a8; }
+  .hud .name { font-weight:700; font-size:0.92rem; letter-spacing:0.06em; }
+  .hud .hp { color:rgba(245,245,245,0.7); font-size:0.74rem; }
+  .vs { position:fixed; top:14px; left:50%; transform:translateX(-50%); font-family:'Cinzel',serif; font-size:1.5rem; font-weight:700; color:#c9a227; letter-spacing:0.4em; padding:8px 18px; background:rgba(8,4,8,0.6); backdrop-filter:blur(12px); border-radius:8px; border:1px solid rgba(201,162,39,0.3); pointer-events:none; }
+  .controls { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:8px; }
+  .btn { background:rgba(8,4,8,0.7); backdrop-filter:blur(12px); padding:8px 14px; border-radius:8px; border:1px solid rgba(245,245,245,0.1); color:#f5f5f5; font-family:'Outfit', sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.15s; }
+  .btn.attack { border-color:rgba(184,67,26,0.5); color:#e08555; }
+  .btn.attack:hover { background:rgba(184,67,26,0.5); color:#fff; }
+  .btn.block { border-color:rgba(13,125,114,0.5); color:#3eb8a8; }
+  .btn.block:hover { background:rgba(13,125,114,0.5); color:#fff; }
+  .btn:hover { background:rgba(245,245,245,0.1); }
+  .strike-flash { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity 0.1s; z-index:9; }
+  .strike-flash.attack { background:rgba(255,80,40,0.5); }
+  .strike-flash.block { background:rgba(80,200,180,0.4); }
+  .strike-flash.on { opacity:1; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.158.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div class="hud left">
+  <div class="name">⚔ SANGIN KHAKDAR</div>
+  <div class="hp">Mountain Dwarf Fighter L2 · HP <span id="sanHp">22</span>/22</div>
+</div>
+<div class="vs">VS</div>
+<div class="hud right">
+  <div class="name">🩸 KHAJUYAN COMMANDER</div>
+  <div class="hp">CR 4 · HP <span id="cmdHp">60</span>/60</div>
+</div>
+<div class="controls">
+  <button class="btn attack" id="atkBtn">⚔ Sangin attacks</button>
+  <button class="btn block" id="cmdBtn">🩸 Commander strikes</button>
+  <button class="btn" id="resetBtn">⟲ Reset</button>
+  <a href="index.html" class="btn" style="text-decoration:none">← gallery</a>
+</div>
+<div class="strike-flash" id="flash"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0608);
+scene.fog = new THREE.FogExp2(0x0a0608, 0.04);
+
+const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 3.2, 11);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.06;
+controls.target.set(0, 2, 0);
+controls.minDistance = 5; controls.maxDistance = 18;
+controls.maxPolarAngle = Math.PI * 0.55;
+
+scene.add(new THREE.AmbientLight(0x1a1018, 0.5));
+
+// Sangin's side — warm fire
+const sanLight = new THREE.PointLight(0xff7030, 5, 18, 1.5);
+sanLight.position.set(-5, 5, 3);
+sanLight.castShadow = true;
+scene.add(sanLight);
+
+// Commander's side — cold green Khajuyan glow
+const cmdLight = new THREE.PointLight(0x2da080, 4, 18, 1.5);
+cmdLight.position.set(5, 5, 3);
+cmdLight.castShadow = true;
+scene.add(cmdLight);
+
+// Battle ground
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.MeshStandardMaterial({ color: 0x140a0a, roughness: 0.85 })
+);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Arena center marker — split tile
+const ringGeo = new THREE.RingGeometry(0.4, 6, 64, 1, 0, Math.PI);
+const ringMatLeft = new THREE.MeshStandardMaterial({
+  color: 0xb8431a, emissive: 0x6a2a10, emissiveIntensity: 0.4,
+  roughness: 0.6, side: THREE.DoubleSide,
+});
+const ringMatRight = new THREE.MeshStandardMaterial({
+  color: 0x0d7d72, emissive: 0x0d4a44, emissiveIntensity: 0.4,
+  roughness: 0.6, side: THREE.DoubleSide,
+});
+const arenaLeft = new THREE.Mesh(new THREE.RingGeometry(0.4, 6, 64, 1, Math.PI/2, Math.PI), ringMatLeft);
+arenaLeft.rotation.x = -Math.PI/2; arenaLeft.position.y = 0.005; scene.add(arenaLeft);
+const arenaRight = new THREE.Mesh(new THREE.RingGeometry(0.4, 6, 64, 1, -Math.PI/2, Math.PI), ringMatRight);
+arenaRight.rotation.x = -Math.PI/2; arenaRight.position.y = 0.005; scene.add(arenaRight);
+
+// Back wall — far Persian arch suggestion
+const wall = new THREE.Mesh(
+  new THREE.PlaneGeometry(30, 14),
+  new THREE.MeshStandardMaterial({ color: 0x1a1010, roughness: 0.95 })
+);
+wall.position.set(0, 7, -8); scene.add(wall);
+
+// Helper to load a billboard
+function loadBillboard(url, x, h, emissive=0x000000) {
+  return new Promise(resolve => {
+    new THREE.TextureLoader().load(url, tex => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const aspect = tex.image.width / tex.image.height;
+      const w = h * aspect;
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, h),
+        new THREE.MeshStandardMaterial({
+          map: tex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide,
+          emissive, emissiveIntensity: 0.25,
+        })
+      );
+      m.position.set(x, h/2 + 0.05, 0);
+      m.castShadow = true;
+      scene.add(m);
+      resolve(m);
+    });
+  });
+}
+
+let sangin, commander;
+loadBillboard('assets/sangin_standing_landscape.png', -3.5, 5, 0x331a0a).then(m => sangin = m);
+loadBillboard('assets/khajuyan-commander.png', 3.5, 5, 0x0a3324).then(m => commander = m);
+
+// Embers (floating)
+const emberCount = 100;
+const eGeo = new THREE.BufferGeometry();
+const ePos = new Float32Array(emberCount * 3);
+const eSeed = [];
+const eColor = new Float32Array(emberCount * 3);
+for (let i = 0; i < emberCount; i++) {
+  ePos[i*3] = (Math.random() - 0.5) * 18;
+  ePos[i*3 + 1] = Math.random() * 9;
+  ePos[i*3 + 2] = (Math.random() - 0.5) * 8 - 1;
+  eSeed.push(Math.random() * 10);
+  // left side warm, right side cool
+  if (ePos[i*3] < 0) { eColor[i*3]=1; eColor[i*3+1]=0.5; eColor[i*3+2]=0.18; }
+  else { eColor[i*3]=0.18; eColor[i*3+1]=0.65; eColor[i*3+2]=0.55; }
+}
+eGeo.setAttribute('position', new THREE.BufferAttribute(ePos, 3));
+eGeo.setAttribute('color', new THREE.BufferAttribute(eColor, 3));
+const eMat = new THREE.PointsMaterial({
+  size: 0.07, transparent: true, opacity: 0.85,
+  vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false,
+});
+scene.add(new THREE.Points(eGeo, eMat));
+
+// HP + strike logic
+let sanHp = 22, cmdHp = 60;
+const flash = document.getElementById('flash');
+function strike(target, atkOrBlock) {
+  flash.className = 'strike-flash ' + atkOrBlock;
+  flash.classList.add('on');
+  setTimeout(() => flash.classList.remove('on'), 90);
+  if (target) {
+    let t0 = performance.now();
+    const baseX = target.position.x;
+    const shake = () => {
+      const dt = performance.now() - t0;
+      if (dt > 350) { target.position.x = baseX; return; }
+      target.position.x = baseX + Math.sin(dt * 0.06) * 0.18 * (1 - dt/350);
+      requestAnimationFrame(shake);
+    };
+    shake();
+  }
+}
+document.getElementById('atkBtn').addEventListener('click', () => {
+  cmdHp = Math.max(0, cmdHp - Math.floor(8 + Math.random() * 6));
+  document.getElementById('cmdHp').textContent = cmdHp;
+  strike(commander, 'attack');
+});
+document.getElementById('cmdBtn').addEventListener('click', () => {
+  sanHp = Math.max(0, sanHp - Math.floor(4 + Math.random() * 4));
+  document.getElementById('sanHp').textContent = sanHp;
+  strike(sangin, 'block');
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  sanHp = 22; cmdHp = 60;
+  document.getElementById('sanHp').textContent = 22;
+  document.getElementById('cmdHp').textContent = 60;
+  camera.position.set(0, 3.2, 11);
+  controls.target.set(0, 2, 0);
+});
+
+let t = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  t += 0.016;
+  sanLight.intensity = 4 + Math.sin(t*9) * 0.6 + (Math.random()-0.5)*0.3;
+  cmdLight.intensity = 3.5 + Math.sin(t*5) * 0.4;
+  // ember rise
+  const pos = eGeo.attributes.position.array;
+  for (let i = 0; i < emberCount; i++) {
+    pos[i*3 + 1] += 0.013;
+    pos[i*3] += Math.sin(t * 0.5 + eSeed[i]) * 0.005;
+    if (pos[i*3 + 1] > 9) {
+      pos[i*3 + 1] = 0;
+      pos[i*3] = (Math.random() - 0.5) * 18;
+    }
+  }
+  eGeo.attributes.position.needsUpdate = true;
+  if (sangin) sangin.lookAt(camera.position.x, sangin.position.y, camera.position.z);
+  if (commander) commander.lookAt(camera.position.x, commander.position.y, camera.position.z);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
