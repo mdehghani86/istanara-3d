@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Istanara — Luffy vs Khajuyan Ambush</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; background:#06060a; color:#f5f5f5; font-family:'Outfit', sans-serif; overflow:hidden; touch-action:none; user-select:none; }
+  canvas { display:block; cursor:grab; }
+  canvas:active { cursor:grabbing; }
+
+  /* TOP-LEFT: PLAYER HP */
+  .player-hud { position:fixed; top:14px; left:14px; z-index:10; background:rgba(8,8,14,0.85); backdrop-filter:blur(12px); padding:10px 14px; border-radius:10px; border:1px solid rgba(201,162,39,0.3); min-width:240px; }
+  .player-hud .name { color:#c9a227; font-family:'Cinzel',serif; font-weight:700; font-size:1.0rem; letter-spacing:0.06em; }
+  .player-hud .hp-bar { margin-top:6px; height:14px; background:rgba(245,80,60,0.15); border-radius:4px; border:1px solid rgba(245,245,245,0.18); overflow:hidden; position:relative; }
+  .player-hud .hp-fill { height:100%; background:linear-gradient(90deg,#3eb86a,#5dd084); transition:width 0.2s; }
+  .player-hud .hp-fill.medium { background:linear-gradient(90deg,#e5b03e,#f0c050); }
+  .player-hud .hp-fill.low { background:linear-gradient(90deg,#e54a3e,#ff6b5e); }
+  .player-hud .hp-text { position:absolute; inset:0; text-align:center; font-size:0.7rem; font-weight:700; line-height:14px; text-shadow:0 1px 2px rgba(0,0,0,0.8); }
+
+  /* TOP-CENTER: ENEMY REMAINING */
+  .objective { position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:10; background:rgba(8,8,14,0.85); backdrop-filter:blur(12px); padding:8px 18px; border-radius:8px; border:1px solid rgba(232,101,26,0.4); }
+  .objective .label { font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.18em; color:#e08555; }
+  .objective .count { font-family:'Cinzel',serif; font-size:1.2rem; font-weight:700; color:#fff; text-align:center; margin-top:2px; }
+
+  /* TOP-RIGHT: BACK */
+  .top-right { position:fixed; top:14px; right:14px; z-index:10; display:flex; gap:8px; }
+  .btn { background:rgba(8,8,14,0.85); backdrop-filter:blur(12px); padding:8px 14px; border-radius:8px; border:1px solid rgba(245,245,245,0.1); color:#f5f5f5; font-family:'Outfit', sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; text-decoration:none; }
+  .btn:hover { background:rgba(184,67,26,0.5); border-color:#b8431a; }
+
+  /* CENTER: CROSSHAIR */
+  .crosshair { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:14px; height:14px; border:2px solid rgba(255,255,255,0.5); border-radius:50%; pointer-events:none; z-index:5; }
+  .crosshair.in-range { border-color:#ff5028; box-shadow:0 0 12px rgba(255,80,40,0.6); }
+
+  /* BOTTOM-CENTER: ATTACK BUTTON */
+  .attack-btn { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:10; padding:14px 38px; background:rgba(184,67,26,0.85); border:2px solid #ff5028; color:#fff; font-family:'Cinzel',serif; font-weight:700; font-size:1.0rem; letter-spacing:0.12em; border-radius:10px; cursor:pointer; box-shadow:0 4px 20px rgba(184,67,26,0.5); }
+  .attack-btn:hover, .attack-btn:active { background:rgba(232,101,26,0.95); transform:translateX(-50%) scale(1.05); }
+  .attack-btn .key { font-size:0.65rem; opacity:0.7; display:block; margin-top:2px; letter-spacing:0.2em; }
+
+  /* HIT FLASH */
+  .hit-flash { position:fixed; inset:0; background:radial-gradient(ellipse at center, transparent 30%, rgba(255,40,30,0.7) 100%); pointer-events:none; opacity:0; transition:opacity 0.08s; z-index:6; }
+  .hit-flash.on { opacity:1; }
+
+  /* START SCREEN */
+  .startscreen { position:fixed; inset:0; z-index:100; background:rgba(6,6,10,0.95); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px; padding:20px; }
+  .startscreen.hidden { display:none; }
+  .startscreen h2 { font-family:'Cinzel',serif; color:#c9a227; font-size:2.0rem; letter-spacing:0.1em; text-align:center; }
+  .startscreen .sub { font-family:'Cinzel',serif; color:rgba(245,245,245,0.5); font-size:0.85rem; letter-spacing:0.2em; margin-top:-8px; }
+  .startscreen p { color:rgba(245,245,245,0.75); max-width:520px; text-align:center; line-height:1.7; font-size:0.95rem; }
+  .startscreen .keys { display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; justify-content:center; }
+  .startscreen .key { padding:6px 12px; background:rgba(255,255,255,0.06); border:1px solid rgba(245,245,245,0.18); border-radius:6px; font-family:monospace; font-size:0.85rem; color:#fff; }
+  .startscreen .startbtn { margin-top:10px; padding:14px 38px; background:#c9a227; color:#06060a; font-family:'Cinzel',serif; font-weight:700; letter-spacing:0.1em; border:none; border-radius:8px; font-size:1.0rem; cursor:pointer; }
+  .startscreen .startbtn:hover { background:#e0b832; }
+
+  /* WIN / LOSE */
+  .endscreen { position:fixed; inset:0; z-index:101; background:rgba(6,6,10,0.95); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px; padding:20px; }
+  .endscreen.hidden { display:none; }
+  .endscreen h2 { font-family:'Cinzel',serif; font-size:3.0rem; letter-spacing:0.12em; }
+  .endscreen.win h2 { color:#c9a227; text-shadow:0 0 30px rgba(201,162,39,0.6); }
+  .endscreen.lose h2 { color:#e54a3e; text-shadow:0 0 30px rgba(229,74,62,0.6); }
+  .endscreen p { color:rgba(245,245,245,0.7); max-width:480px; text-align:center; line-height:1.7; }
+
+  /* MINIMAP */
+  .minimap-wrap { position:fixed; bottom:14px; right:14px; z-index:10; padding:6px; background:rgba(8,8,14,0.85); backdrop-filter:blur(12px); border:1px solid rgba(201,162,39,0.3); border-radius:10px; }
+  #minimap { display:block; border-radius:6px; }
+  .minimap-wrap .mm-title { font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.18em; color:#c9a227; text-align:center; padding:2px 0 4px; }
+
+  /* MOBILE JOYSTICKS */
+  .joystick { position:fixed; width:110px; height:110px; border-radius:50%; background:rgba(8,8,14,0.4); border:2px solid rgba(245,245,245,0.18); z-index:8; touch-action:none; display:none; }
+  .joystick .stick { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:46px; height:46px; border-radius:50%; background:rgba(201,162,39,0.6); border:1px solid #c9a227; pointer-events:none; }
+  .joystick.move { left:24px; bottom:120px; }
+  .joystick.look { right:24px; bottom:280px; }
+  body.touch .joystick { display:block; }
+  body.touch .crosshair { display:none; }
+  body.touch .attack-btn { bottom:140px; right:24px; left:auto; transform:none; }
+  body.touch .attack-btn:hover, body.touch .attack-btn:active { transform:scale(1.05); }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.158.0/build/three.module.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<div class="player-hud">
+  <div class="name">⚔ LUFFY · Khajuyan Reborn</div>
+  <div class="hp-bar"><div class="hp-fill" id="playerHpFill" style="width:100%"></div><div class="hp-text" id="playerHpText">100 / 100</div></div>
+</div>
+
+<div class="objective">
+  <div class="label">KHAJUYAN AMBUSHERS</div>
+  <div class="count"><span id="enemyCount">4</span> remaining</div>
+</div>
+
+<div class="top-right">
+  <a href="./" class="btn">← gallery</a>
+</div>
+
+<div class="crosshair" id="crosshair"></div>
+
+<button class="attack-btn" id="attackBtn">⚔ STRIKE<span class="key">SPACE</span></button>
+
+<div class="hit-flash" id="hitFlash"></div>
+
+<div class="minimap-wrap">
+  <div class="mm-title">TEMPLE</div>
+  <canvas id="minimap" width="200" height="200"></canvas>
+</div>
+
+<div class="startscreen" id="startScreen">
+  <h2>LUFFY vs THE AMBUSH</h2>
+  <div class="sub">AZARAKHSH TEMPLE · KHAJUYAN INFILTRATION</div>
+  <p>Four Khajuyan ambushers have infiltrated the Temple of Eternity. Take the role of <b style="color:#c9a227">Luffy</b> — clear every chamber and don't let them touch the Sacred Fire.</p>
+  <div class="keys">
+    <span class="key">W A S D / arrows · move</span>
+    <span class="key">drag mouse · turn</span>
+    <span class="key">SPACE · strike</span>
+    <span class="key">SHIFT · run</span>
+  </div>
+  <button class="startbtn" id="enterBtn">⚔ BEGIN BATTLE</button>
+</div>
+
+<div class="endscreen win hidden" id="winScreen">
+  <h2>VICTORY</h2>
+  <p>The temple is cleared. The Sacred Fire still burns.</p>
+  <p id="winStats" style="opacity:0.6;font-size:0.85rem;"></p>
+  <button class="startbtn" onclick="location.reload()">⟲ FIGHT AGAIN</button>
+</div>
+
+<div class="endscreen lose hidden" id="loseScreen">
+  <h2>FALLEN</h2>
+  <p>The ambushers have struck you down. The temple is theirs.</p>
+  <button class="startbtn" onclick="location.reload()">⟲ RESTART</button>
+</div>
+
+<div class="joystick move" id="joyMove"><div class="stick" id="stickMove"></div></div>
+<div class="joystick look" id="joyLook"><div class="stick" id="stickLook"></div></div>
+
+<script type="module">
+import * as THREE from 'three';
+
+const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+if (isTouch) document.body.classList.add('touch');
+
+// ─── LOAD CHARACTER ART ───────────────────────────────────────────────
+const loader = new THREE.TextureLoader();
+const TEX = {};
+function loadTex(key, urls) {
+  return new Promise((resolve) => {
+    let i = 0;
+    const tryNext = () => {
+      if (i >= urls.length) { console.warn('Failed to load', key); resolve(null); return; }
+      loader.load(urls[i++],
+        (tex) => { tex.colorSpace = THREE.SRGBColorSpace; TEX[key] = tex; resolve(tex); },
+        undefined,
+        () => tryNext()
+      );
+    };
+    tryNext();
+  });
+}
+
+// =====================================================================
+// SCENE
+// =====================================================================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x141018);
+scene.fog = new THREE.FogExp2(0x141018, 0.008);
+
+const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 200);
+camera.position.set(0, 4, 22);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.6;
+document.body.appendChild(renderer.domElement);
+
+// =====================================================================
+// PROCEDURAL TEXTURES
+// =====================================================================
+function makePersianTile() {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#1a1530'; ctx.fillRect(0,0,size,size);
+  ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2;
+  const cells = 4, step = size / cells;
+  for (let i = 0; i <= cells; i++) {
+    ctx.beginPath(); ctx.moveTo(i*step,0); ctx.lineTo(i*step,size); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i*step); ctx.lineTo(size,i*step); ctx.stroke();
+  }
+  ctx.strokeStyle = '#8a6a18'; ctx.lineWidth = 1.5;
+  for (let i=0;i<cells;i++) for (let j=0;j<cells;j++) {
+    const cx=i*step+step/2, cy=j*step+step/2, r=step*0.32;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-r); ctx.lineTo(cx+r,cy); ctx.lineTo(cx,cy+r); ctx.lineTo(cx-r,cy); ctx.closePath(); ctx.stroke();
+    ctx.fillStyle='#c9a227'; ctx.beginPath(); ctx.arc(cx,cy,3,0,Math.PI*2); ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 4);
+  return tex;
+}
+function makeStone(color = '#3a2820') {
+  const size = 256;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = color; ctx.fillRect(0,0,size,size);
+  for (let i=0;i<4000;i++) {
+    const x=Math.random()*size, y=Math.random()*size;
+    const v=Math.floor(40+Math.random()*60);
+    ctx.fillStyle = `rgba(${v+20},${v+10},${v},0.3)`;
+    ctx.fillRect(x,y,1+Math.random()*2,1+Math.random()*2);
+  }
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+  for (let y=0;y<size;y+=32) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(size,y); ctx.stroke(); }
+  for (let y=0;y<size;y+=32) {
+    const off = ((y/32)%2)*32;
+    for (let x=off;x<size;x+=64) { ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+32); ctx.stroke(); }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+const tileTex = makePersianTile();
+const stoneTex = makeStone();
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+function addWall(x1, z1, x2, z2, h = 5, opts = {}) {
+  const dx = x2 - x1, dz = z2 - z1;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.01) return null;
+  const angle = Math.atan2(dz, dx);
+  const tex = (opts.tex || stoneTex).clone(); tex.needsUpdate = true;
+  tex.repeat.set(Math.max(1, len/2), Math.max(1, h/2));
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex, color: opts.color ?? 0x4a3528, roughness: 0.92,
+  });
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(len, h, 0.3), mat);
+  wall.position.set((x1+x2)/2, h/2, (z1+z2)/2);
+  wall.rotation.y = -angle;
+  wall.castShadow = true; wall.receiveShadow = true;
+  scene.add(wall);
+  return wall;
+}
+function addLintel(x1, z1, x2, z2, doorH = 2.5, ceilH = 5) {
+  const dx = x2 - x1, dz = z2 - z1;
+  const len = Math.hypot(dx, dz);
+  const h = ceilH - doorH;
+  if (h <= 0) return;
+  const lintel = new THREE.Mesh(
+    new THREE.BoxGeometry(len, h, 0.3),
+    new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.7, metalness: 0.2 })
+  );
+  lintel.position.set((x1+x2)/2, doorH + h/2, (z1+z2)/2);
+  lintel.rotation.y = -Math.atan2(dz, dx);
+  lintel.castShadow = true; lintel.receiveShadow = true;
+  scene.add(lintel);
+}
+
+// =====================================================================
+// FLOOR
+// =====================================================================
+{
+  const floor = new THREE.Mesh(
+    new THREE.CircleGeometry(13, 64),
+    new THREE.MeshStandardMaterial({ map: tileTex, roughness: 0.7, metalness: 0.15 })
+  );
+  floor.rotation.x = -Math.PI/2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // outer ground
+  const og = new THREE.Mesh(
+    new THREE.RingGeometry(13, 50, 64),
+    new THREE.MeshStandardMaterial({ map: stoneTex.clone(), color: 0x231a14, roughness: 0.95 })
+  );
+  og.material.map.repeat.set(20, 20);
+  og.rotation.x = -Math.PI/2;
+  og.position.y = -0.02;
+  og.receiveShadow = true;
+  scene.add(og);
+}
+
+// =====================================================================
+// OUTER WALL (with south entrance)
+// =====================================================================
+const outerR = 14;
+const entranceArc = Math.PI / 12;
+{
+  const startA = Math.PI/2 + entranceArc/2;
+  const arcLen = Math.PI*2 - entranceArc;
+  const wallH = 8;
+  const tex = stoneTex.clone(); tex.needsUpdate = true; tex.repeat.set(20, 3);
+  const wall = new THREE.Mesh(
+    new THREE.CylinderGeometry(outerR, outerR, wallH, 96, 1, true, startA, arcLen),
+    new THREE.MeshStandardMaterial({ map: tex, side: THREE.BackSide, color: 0x4a3528, roughness: 0.95 })
+  );
+  wall.position.y = wallH/2; wall.receiveShadow = true; scene.add(wall);
+
+  for (const sx of [-1.5, 1.5]) {
+    const jamb = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, wallH, 1),
+      new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.7 })
+    );
+    jamb.position.set(sx, wallH/2, outerR);
+    jamb.castShadow = true; scene.add(jamb);
+  }
+  const lintel = new THREE.Mesh(
+    new THREE.BoxGeometry(3.2, 1.2, 1),
+    new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.65, metalness: 0.2, emissive: 0x2a1a08, emissiveIntensity: 0.3 })
+  );
+  lintel.position.set(0, 4.6, outerR);
+  lintel.castShadow = true; scene.add(lintel);
+}
+
+// south steps outside
+for (let i = 0; i < 5; i++) {
+  const step = new THREE.Mesh(
+    new THREE.BoxGeometry(6 - i*0.4, 0.18, 0.7),
+    new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.85 })
+  );
+  step.position.set(0, -0.09 - i*0.05, outerR + 0.6 + i*0.7);
+  step.receiveShadow = true; step.castShadow = true; scene.add(step);
+}
+
+// =====================================================================
+// 16 PILLARS
+// =====================================================================
+const pillars = [];
+for (let i = 0; i < 16; i++) {
+  const angle = (i/16) * Math.PI*2;
+  const x = Math.cos(angle) * 6.3;
+  const z = Math.sin(angle) * 6.3;
+  const tex = stoneTex.clone(); tex.needsUpdate = true; tex.repeat.set(1, 3);
+  const shaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.4, 6.5, 16),
+    new THREE.MeshStandardMaterial({ map: tex, color: 0x5a4032, roughness: 0.85 })
+  );
+  shaft.position.set(x, 3.25, z); shaft.castShadow = true; shaft.receiveShadow = true;
+  scene.add(shaft);
+  const cap = new THREE.Mesh(
+    new THREE.BoxGeometry(1.0, 0.3, 1.0),
+    new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.6, metalness: 0.3, emissive: 0x2a1a08, emissiveIntensity: 0.2 })
+  );
+  cap.position.set(x, 6.65, z); cap.castShadow = true; scene.add(cap);
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(1.1, 0.35, 1.1),
+    new THREE.MeshStandardMaterial({ color: 0x6a4818, roughness: 0.7, metalness: 0.25 })
+  );
+  base.position.set(x, 0.18, z); base.castShadow = true; base.receiveShadow = true;
+  scene.add(base);
+  pillars.push({ x, z });
+}
+
+// =====================================================================
+// CENTRAL ALTAR + FIRE
+// =====================================================================
+const altarBase = new THREE.Mesh(
+  new THREE.CylinderGeometry(1.0, 1.2, 0.4, 24),
+  new THREE.MeshStandardMaterial({ color: 0x2a1a14, roughness: 0.7, metalness: 0.4 })
+);
+altarBase.position.y = 0.2; altarBase.castShadow = true; altarBase.receiveShadow = true; scene.add(altarBase);
+
+const altarTop = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.85, 1.0, 0.6, 24),
+  new THREE.MeshStandardMaterial({ color: 0x4a2818, roughness: 0.5, metalness: 0.5, emissive: 0x4a1808, emissiveIntensity: 0.5 })
+);
+altarTop.position.y = 0.7; altarTop.castShadow = true; scene.add(altarTop);
+
+const bowl = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.7, 0.4, 0.3, 20),
+  new THREE.MeshStandardMaterial({ color: 0x6a3418, roughness: 0.4, metalness: 0.6, emissive: 0xff4810, emissiveIntensity: 0.8 })
+);
+bowl.position.y = 1.05; scene.add(bowl);
+
+const flame = new THREE.Mesh(
+  new THREE.ConeGeometry(0.55, 1.6, 14, 1, true),
+  new THREE.MeshBasicMaterial({ color: 0xff8030, transparent:true, opacity:0.85, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide })
+);
+flame.position.y = 1.95; scene.add(flame);
+
+const flameInner = new THREE.Mesh(
+  new THREE.ConeGeometry(0.3, 1.0, 12, 1, true),
+  new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false })
+);
+flameInner.position.y = 1.7; scene.add(flameInner);
+
+// =====================================================================
+// DOMED CEILING
+// =====================================================================
+{
+  const tex = stoneTex.clone(); tex.needsUpdate = true; tex.repeat.set(8, 4);
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(13, 64, 32, 0, Math.PI*2, 0.18, Math.PI/2 - 0.18),
+    new THREE.MeshStandardMaterial({ map: tex, side: THREE.BackSide, color: 0x3a2820, roughness: 0.9 })
+  );
+  dome.position.y = 7; dome.receiveShadow = true; scene.add(dome);
+}
+
+// =====================================================================
+// SIDE ROOMS (same layout as walkthrough)
+// =====================================================================
+function buildRoom(x1, x2, z1, z2, doorAxis, doorMin, doorMax, floorColor) {
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(x2-x1, z2-z1),
+    new THREE.MeshStandardMaterial({ color: floorColor, roughness: 0.85 })
+  );
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set((x1+x2)/2, 0.01, (z1+z2)/2);
+  floor.receiveShadow = true;
+  scene.add(floor);
+  // 4 walls minus doorway
+  if (doorAxis === 'east')   { addWall(x1,z1,x2,z1); addWall(x1,z2,x1,z1); addWall(x2,z2,x1,z2); addWall(x2,z1,x2,doorMin); addWall(x2,doorMax,x2,z2); addLintel(x2,doorMin,x2,doorMax); }
+  else if (doorAxis === 'west')   { addWall(x1,z1,x2,z1); addWall(x2,z1,x2,z2); addWall(x2,z2,x1,z2); addWall(x1,z2,x1,doorMax); addWall(x1,doorMin,x1,z1); addLintel(x1,doorMin,x1,doorMax); }
+  else if (doorAxis === 'north')  { addWall(x1,z2,x1,z1); addWall(x2,z1,x2,z2); addWall(x2,z2,x1,z2); addWall(x1,z1,doorMin,z1); addWall(doorMax,z1,x2,z1); addLintel(doorMin,z1,doorMax,z1); }
+  else if (doorAxis === 'south')  { addWall(x1,z1,x2,z1); addWall(x2,z1,x2,z2); addWall(x1,z2,x1,z1); addWall(x2,z2,doorMax,z2); addWall(doorMin,z2,x1,z2); addLintel(doorMin,z2,doorMax,z2); }
+}
+
+// Artifact Storage (NW) — door east
+buildRoom(-12, -6.29, -10.86, -5.71, 'east', -8, -6.4, 0x3c2e1e);
+// Priest Quarters (NE) — door west
+buildRoom(5.14, 11.43, -11.43, -4.57, 'west', -7.5, -5.9, 0x4a3828);
+// Prayer Hall (SE) — door west
+buildRoom(2.86, 12, 2.86, 10.86, 'west', 4.5, 6.5, 0x3a2818);
+
+// Room lights
+function addLanternAt(x, y, z) {
+  const l = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffc070 }));
+  l.position.set(x, y, z); scene.add(l);
+  const pl = new THREE.PointLight(0xffc070, 4.5, 12, 1.4);
+  pl.position.set(x, y, z); scene.add(pl);
+}
+addLanternAt(-9, 3.5, -9);
+addLanternAt(-9, 3.5, -7);
+addLanternAt(8, 3.8, -9);
+addLanternAt(8, 3.8, -7);
+addLanternAt(5, 4, 5);
+addLanternAt(8, 4, 5);
+addLanternAt(11, 4, 5);
+addLanternAt(8, 4, 9);
+
+// =====================================================================
+// LIGHTING
+// =====================================================================
+scene.add(new THREE.AmbientLight(0xb8a890, 1.4));
+scene.add(new THREE.HemisphereLight(0xffd9a8, 0x4a3828, 0.7));
+
+const fireLight = new THREE.PointLight(0xff7028, 18, 30, 1.2);
+fireLight.position.set(0, 2.0, 0);
+fireLight.castShadow = true;
+fireLight.shadow.mapSize.set(1024, 1024);
+fireLight.shadow.bias = -0.0008;
+scene.add(fireLight);
+
+const moonLight = new THREE.SpotLight(0xc8d8f0, 12, 40, Math.PI/12, 0.4, 1);
+moonLight.position.set(0, 18, 0);
+moonLight.target.position.set(0, 0, 0);
+scene.add(moonLight);
+scene.add(moonLight.target);
+
+const fillLight = new THREE.PointLight(0xffe0b8, 2.5, 40, 1.0);
+fillLight.position.set(0, 6, 0);
+scene.add(fillLight);
+
+// 8 wall sconces
+const sconces = [];
+for (let i = 0; i < 8; i++) {
+  const a = (i/8) * Math.PI*2 + Math.PI/8;
+  if (Math.abs(a - Math.PI/2) < entranceArc) continue;
+  const x = Math.cos(a) * 12.5;
+  const z = Math.sin(a) * 12.5;
+  const s = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff9a40 }));
+  s.position.set(x, 4.5, z); scene.add(s);
+  const light = new THREE.PointLight(0xff8030, 4, 14, 1.4);
+  light.position.set(x, 4.5, z); scene.add(light);
+  sconces.push({ light, base: 4 });
+}
+
+// =====================================================================
+// COLLISION (free regions — same as walkthrough)
+// =====================================================================
+const FREE = [
+  { type:'rect', xmin:-3.0, xmax:3.0, zmin:13, zmax:35 },
+  { type:'circle', cx:0, cz:0, r:13 },
+  { type:'rect', xmin:-12, xmax:-6.29, zmin:-10.86, zmax:-5.71 },
+  { type:'rect', xmin:-7.3, xmax:-5.5, zmin:-8, zmax:-6.4 },
+  { type:'rect', xmin:5.14, xmax:11.43, zmin:-11.43, zmax:-4.57 },
+  { type:'rect', xmin:5.0, xmax:7.5, zmin:-7.5, zmax:-5.9 },
+  { type:'rect', xmin:2.86, xmax:12, zmin:2.86, zmax:10.86 },
+  { type:'rect', xmin:1.5, xmax:4.5, zmin:4.5, zmax:6.5 },
+];
+const PADDING = 0.5;
+function pointInFree(x, z) {
+  for (const f of FREE) {
+    if (f.type === 'rect') {
+      if (x >= f.xmin + PADDING && x <= f.xmax - PADDING && z >= f.zmin + PADDING && z <= f.zmax - PADDING) return true;
+    } else if (f.type === 'circle') {
+      if (Math.hypot(x - f.cx, z - f.cz) <= f.r - PADDING) return true;
+    }
+  }
+  return false;
+}
+function pointBlocked(x, z) {
+  if (Math.hypot(x, z) < 1.6) return true;
+  for (const p of pillars) if (Math.hypot(x - p.x, z - p.z) < 0.8) return true;
+  return false;
+}
+function tryMove(curX, curZ, newX, newZ) {
+  if (pointInFree(newX, newZ) && !pointBlocked(newX, newZ)) return [newX, newZ];
+  if (pointInFree(newX, curZ) && !pointBlocked(newX, curZ)) return [newX, curZ];
+  if (pointInFree(curX, newZ) && !pointBlocked(curX, newZ)) return [curX, newZ];
+  return [curX, curZ];
+}
+
+// =====================================================================
+// BILLBOARD HELPERS
+// =====================================================================
+function makeBillboard(tex, height) {
+  const aspect = tex.image.width / tex.image.height;
+  const width = height * aspect;
+  const geo = new THREE.PlaneGeometry(width, height);
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex, side: THREE.DoubleSide,
+    transparent: true, alphaTest: 0.05,
+    emissive: 0x331a0a, emissiveIntensity: 0.15,
+  });
+  return new THREE.Mesh(geo, mat);
+}
+
+function makeHpBar(maxHp, color = '#3eb86a') {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 18;
+  const tex = new THREE.CanvasTexture(c);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+  sprite.scale.set(2.0, 0.28, 1);
+  sprite.userData = { canvas: c, ctx: c.getContext('2d'), tex, maxHp };
+  return sprite;
+}
+function updateHpBar(sprite, hp) {
+  const { canvas, ctx, tex, maxHp } = sprite.userData;
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, w, h);
+  const ratio = Math.max(0, hp / maxHp);
+  ctx.fillStyle = ratio > 0.5 ? '#3eb86a' : ratio > 0.25 ? '#e5b03e' : '#e54a3e';
+  ctx.fillRect(2, 2, (w-4) * ratio, h-4);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(1, 1, w-2, h-2);
+  tex.needsUpdate = true;
+}
+
+// =====================================================================
+// PLAYER + ENEMIES (defined after textures load)
+// =====================================================================
+const player = {
+  x: 0, z: 18, y: 0,
+  hp: 100, maxHp: 100,
+  damage: 28,
+  attackRange: 3.0,
+  attackArc: Math.PI / 1.4,  // ~128° (generous so it feels good)
+  attackCooldown: 0.5,
+  lastAttack: -10,
+  alive: true,
+  mesh: null,
+  height: 2.4,
+};
+
+const enemies = [];
+function spawnEnemy(type, x, z) {
+  const tex = TEX[type === 'commander' ? 'commander' : 'shadowblade'];
+  if (!tex) return;
+  const e = {
+    type, x, z,
+    maxHp: type === 'commander' ? 80 : 50,
+    hp: type === 'commander' ? 80 : 50,
+    damage: type === 'commander' ? 16 : 10,
+    speed: type === 'shadowblade' ? 4.5 : 3.0,
+    attackRange: 1.6,
+    attackCooldown: 1.4,
+    lastAttack: -10,
+    aggroRange: 14,
+    height: type === 'commander' ? 2.7 : 2.3,
+    alive: true,
+    mesh: null, hpBar: null,
+    hitFlash: 0,
+  };
+  e.mesh = makeBillboard(tex, e.height);
+  e.mesh.position.set(x, e.height/2, z);
+  e.mesh.castShadow = true;
+  scene.add(e.mesh);
+  e.hpBar = makeHpBar(e.maxHp);
+  e.hpBar.position.set(x, e.height + 0.4, z);
+  scene.add(e.hpBar);
+  updateHpBar(e.hpBar, e.hp);
+  enemies.push(e);
+}
+
+// =====================================================================
+// CAMERA (third-person follow)
+// =====================================================================
+let camYaw = 0;       // radians, around player
+let camPitch = -0.25; // tilt down a bit
+const CAM_DIST = 6.0;
+const CAM_HEIGHT = 2.0;
+const CAM_TARGET_HEIGHT = 1.4;
+
+function updateCamera() {
+  const cosP = Math.cos(camPitch);
+  const cx = player.x + CAM_DIST * Math.sin(camYaw) * cosP;
+  const cy = player.y + CAM_HEIGHT - CAM_DIST * Math.sin(camPitch);
+  const cz = player.z + CAM_DIST * Math.cos(camYaw) * cosP;
+  camera.position.set(cx, cy, cz);
+  camera.lookAt(player.x, player.y + CAM_TARGET_HEIGHT, player.z);
+}
+
+// =====================================================================
+// INPUT
+// =====================================================================
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'Space') { e.preventDefault(); doAttack(); }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+// drag-to-look (no pointer lock — so user can look without committing)
+let dragging = false, dragX = 0, dragY = 0;
+let mouseDownX = 0, mouseDownY = 0, mouseDownTime = 0;
+renderer.domElement.addEventListener('mousedown', (e) => {
+  if (isTouch) return;
+  dragging = true;
+  dragX = e.clientX; dragY = e.clientY;
+  mouseDownX = e.clientX; mouseDownY = e.clientY; mouseDownTime = performance.now();
+});
+window.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  const dx = e.clientX - dragX, dy = e.clientY - dragY;
+  dragX = e.clientX; dragY = e.clientY;
+  camYaw -= dx * 0.005;
+  camPitch += dy * 0.004;
+  camPitch = Math.max(-0.8, Math.min(0.5, camPitch));
+});
+window.addEventListener('mouseup', (e) => {
+  if (!dragging) return;
+  dragging = false;
+  // tiny mouse movement = click → attack
+  const dist = Math.hypot(e.clientX - mouseDownX, e.clientY - mouseDownY);
+  const dt = performance.now() - mouseDownTime;
+  if (dist < 5 && dt < 250) doAttack();
+});
+
+// touch joysticks
+const joyMove = { active:false, x:0, y:0, id:null, el:document.getElementById('joyMove'), stick:document.getElementById('stickMove') };
+const joyLook = { active:false, x:0, y:0, id:null, el:document.getElementById('joyLook'), stick:document.getElementById('stickLook') };
+function setupJoy(joy) {
+  const reset = () => { joy.active = false; joy.x = joy.y = 0; joy.id = null; joy.stick.style.transform = 'translate(-50%,-50%)'; };
+  joy.el.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    joy.active = true; joy.id = t.identifier;
+    update(t);
+  }, { passive: false });
+  document.addEventListener('touchmove', (e) => {
+    if (!joy.active) return;
+    for (const t of e.changedTouches) if (t.identifier === joy.id) { update(t); break; }
+  }, { passive: false });
+  document.addEventListener('touchend', (e) => {
+    for (const t of e.changedTouches) if (t.identifier === joy.id) { reset(); break; }
+  });
+  document.addEventListener('touchcancel', reset);
+  function update(t) {
+    const r = joy.el.getBoundingClientRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    let dx = t.clientX - cx, dy = t.clientY - cy;
+    const max = r.width/2;
+    const len = Math.hypot(dx, dy);
+    if (len > max) { dx = dx/len*max; dy = dy/len*max; }
+    joy.x = dx/max; joy.y = dy/max;
+    joy.stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  }
+}
+setupJoy(joyMove);
+setupJoy(joyLook);
+
+document.getElementById('attackBtn').addEventListener('click', (e) => { e.preventDefault(); doAttack(); });
+document.getElementById('attackBtn').addEventListener('touchstart', (e) => { e.preventDefault(); doAttack(); }, { passive:false });
+
+// =====================================================================
+// COMBAT
+// =====================================================================
+let gameState = 'starting'; // 'starting' | 'playing' | 'won' | 'lost'
+const clock = new THREE.Clock();
+const hitFlashEl = document.getElementById('hitFlash');
+const playerHpFill = document.getElementById('playerHpFill');
+const playerHpText = document.getElementById('playerHpText');
+const enemyCountEl = document.getElementById('enemyCount');
+const crosshairEl = document.getElementById('crosshair');
+let kills = 0, gameStartTime = 0;
+
+function doAttack() {
+  if (gameState !== 'playing' || !player.alive) return;
+  const now = clock.getElapsedTime();
+  if (now - player.lastAttack < player.attackCooldown) return;
+  player.lastAttack = now;
+
+  // forward direction (where camera is looking, projected to xz)
+  const fwd = new THREE.Vector3();
+  camera.getWorldDirection(fwd);
+  fwd.y = 0; fwd.normalize();
+
+  // find enemies in arc
+  const halfArc = player.attackArc / 2;
+  let bestE = null, bestD = Infinity;
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const dx = e.x - player.x, dz = e.z - player.z;
+    const d = Math.hypot(dx, dz);
+    if (d > player.attackRange) continue;
+    if (d < 0.01) { bestE = e; bestD = 0; break; }
+    const dotF = (dx * fwd.x + dz * fwd.z) / d;
+    if (dotF < Math.cos(halfArc)) continue;
+    if (d < bestD) { bestD = d; bestE = e; }
+  }
+
+  if (bestE) {
+    bestE.hp -= player.damage;
+    bestE.hitFlash = 0.18;
+    spawnHitSpark(bestE.x, bestE.height/2 + 0.3, bestE.z);
+    updateHpBar(bestE.hpBar, bestE.hp);
+    if (bestE.hp <= 0) {
+      bestE.alive = false;
+      bestE.mesh.visible = false;
+      bestE.hpBar.visible = false;
+      kills++;
+      enemyCountEl.textContent = enemies.filter(x => x.alive).length;
+      if (enemies.every(x => !x.alive)) winGame();
+    }
+  }
+
+  // player swing animation
+  if (player.mesh) {
+    player.mesh.scale.x = 1.15;
+    setTimeout(() => { if (player.mesh) player.mesh.scale.x = 1.0; }, 120);
+  }
+}
+
+function tickEnemy(e, dt) {
+  if (!e.alive) return;
+  // hit flash decay
+  if (e.hitFlash > 0) {
+    e.hitFlash -= dt;
+    e.mesh.material.emissive = new THREE.Color(0xff5028);
+    e.mesh.material.emissiveIntensity = e.hitFlash * 5;
+  } else {
+    e.mesh.material.emissive = new THREE.Color(0x331a0a);
+    e.mesh.material.emissiveIntensity = 0.15;
+  }
+
+  const dx = player.x - e.x, dz = player.z - e.z;
+  const dist = Math.hypot(dx, dz);
+  if (dist > e.aggroRange) return;
+
+  if (dist > e.attackRange) {
+    // approach
+    const ndx = dx / dist, ndz = dz / dist;
+    const newX = e.x + ndx * e.speed * dt;
+    const newZ = e.z + ndz * e.speed * dt;
+    const [resX, resZ] = tryMove(e.x, e.z, newX, newZ);
+    e.x = resX; e.z = resZ;
+    e.mesh.position.set(e.x, e.height/2, e.z);
+    e.hpBar.position.set(e.x, e.height + 0.4, e.z);
+  } else {
+    // attack
+    const now = clock.getElapsedTime();
+    if (now - e.lastAttack >= e.attackCooldown) {
+      e.lastAttack = now;
+      player.hp -= e.damage;
+      flashHit();
+      updatePlayerHud();
+      if (player.hp <= 0) {
+        player.hp = 0; player.alive = false;
+        loseGame();
+      }
+    }
+  }
+
+  // billboard always faces camera
+  e.mesh.lookAt(camera.position.x, e.mesh.position.y, camera.position.z);
+}
+
+function spawnHitSpark(x, y, z) {
+  const spark = new THREE.Mesh(
+    new THREE.SphereGeometry(0.4, 12, 8),
+    new THREE.MeshBasicMaterial({ color: 0xff6028, transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false })
+  );
+  spark.position.set(x, y, z);
+  scene.add(spark);
+  const start = performance.now();
+  const animate = () => {
+    const t = (performance.now() - start) / 250;
+    if (t >= 1) { scene.remove(spark); return; }
+    spark.scale.setScalar(1 + t * 1.5);
+    spark.material.opacity = 0.9 * (1 - t);
+    requestAnimationFrame(animate);
+  };
+  animate();
+}
+
+function flashHit() {
+  hitFlashEl.classList.add('on');
+  setTimeout(() => hitFlashEl.classList.remove('on'), 90);
+}
+
+function updatePlayerHud() {
+  const ratio = Math.max(0, player.hp / player.maxHp);
+  playerHpFill.style.width = (ratio * 100) + '%';
+  playerHpFill.classList.remove('medium', 'low');
+  if (ratio < 0.25) playerHpFill.classList.add('low');
+  else if (ratio < 0.5) playerHpFill.classList.add('medium');
+  playerHpText.textContent = `${Math.max(0, Math.ceil(player.hp))} / ${player.maxHp}`;
+}
+
+function winGame() {
+  gameState = 'won';
+  document.getElementById('winScreen').classList.remove('hidden');
+  const elapsed = (performance.now() - gameStartTime) / 1000;
+  document.getElementById('winStats').textContent = `Time: ${elapsed.toFixed(1)}s · Kills: ${kills}`;
+}
+function loseGame() {
+  gameState = 'lost';
+  document.getElementById('loseScreen').classList.remove('hidden');
+}
+
+// =====================================================================
+// MINIMAP
+// =====================================================================
+const minimapCanvas = document.getElementById('minimap');
+const mctx = minimapCanvas.getContext('2d');
+const mapImg = new Image();
+let mapImgReady = false;
+mapImg.onload = () => { mapImgReady = true; };
+mapImg.src = 'assets/floor-temple-eternity.png';
+
+const MAP_SCALE = 35.7;
+const MAP_CENTER = 800;
+const MM_SIZE = 200;
+const MM_VIEW_M = 16;
+function drawMinimap() {
+  mctx.clearRect(0, 0, MM_SIZE, MM_SIZE);
+  if (mapImgReady) {
+    const srcR = MM_VIEW_M * MAP_SCALE;
+    mctx.drawImage(mapImg, MAP_CENTER - srcR, MAP_CENTER - srcR, srcR*2, srcR*2, 0, 0, MM_SIZE, MM_SIZE);
+  } else {
+    mctx.fillStyle = '#1a120c'; mctx.fillRect(0, 0, MM_SIZE, MM_SIZE);
+  }
+  mctx.fillStyle = 'rgba(0,0,0,0.18)'; mctx.fillRect(0, 0, MM_SIZE, MM_SIZE);
+
+  const px_per_m = (MM_SIZE / 2) / MM_VIEW_M;
+
+  // enemies (red dots)
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    mctx.fillStyle = e.type === 'commander' ? '#ff3818' : '#ff8838';
+    mctx.beginPath();
+    mctx.arc(MM_SIZE/2 + e.x*px_per_m, MM_SIZE/2 + e.z*px_per_m, 4, 0, Math.PI*2);
+    mctx.fill();
+  }
+
+  // player (gold triangle pointing where camera is facing)
+  const px = MM_SIZE/2 + player.x * px_per_m;
+  const py = MM_SIZE/2 + player.z * px_per_m;
+  mctx.save(); mctx.translate(px, py); mctx.rotate(-camYaw + Math.PI);
+  mctx.fillStyle = '#c9a227';
+  mctx.beginPath(); mctx.moveTo(0, -8); mctx.lineTo(5, 5); mctx.lineTo(0, 2); mctx.lineTo(-5, 5); mctx.closePath(); mctx.fill();
+  mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.2; mctx.stroke();
+  mctx.restore();
+
+  // N indicator
+  mctx.fillStyle = '#c9a227'; mctx.font = 'bold 10px Cinzel, serif'; mctx.textAlign = 'center';
+  mctx.fillText('N', MM_SIZE/2, 12);
+}
+
+// =====================================================================
+// ANIMATION LOOP
+// =====================================================================
+let t = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  t += dt;
+
+  if (gameState === 'playing') {
+    // ── PLAYER MOVEMENT (relative to camera) ──
+    let mx = 0, mz = 0;
+    if (keys['KeyW'] || keys['ArrowUp'])    { mx -= Math.sin(camYaw); mz -= Math.cos(camYaw); }
+    if (keys['KeyS'] || keys['ArrowDown'])  { mx += Math.sin(camYaw); mz += Math.cos(camYaw); }
+    if (keys['KeyD'] || keys['ArrowRight']) { mx += Math.cos(camYaw); mz -= Math.sin(camYaw); }
+    if (keys['KeyA'] || keys['ArrowLeft'])  { mx -= Math.cos(camYaw); mz += Math.sin(camYaw); }
+    // touch movement: forward/back from joyMove.y, strafe from joyMove.x — but in third-person, treat as world-relative
+    if (isTouch && joyMove.active) {
+      mx -= Math.sin(camYaw) * (-joyMove.y) - Math.cos(camYaw) * joyMove.x;
+      mz -= Math.cos(camYaw) * (-joyMove.y) + Math.sin(camYaw) * joyMove.x;
+    }
+    const len = Math.hypot(mx, mz);
+    if (len > 0) { mx /= len; mz /= len; }
+    const speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? 8.0 : 5.0;
+    const newX = player.x + mx * speed * dt;
+    const newZ = player.z + mz * speed * dt;
+    const [resX, resZ] = tryMove(player.x, player.z, newX, newZ);
+    player.x = resX; player.z = resZ;
+
+    // touch look (right joystick)
+    if (isTouch && joyLook.active) {
+      camYaw -= joyLook.x * 0.045;
+      camPitch += joyLook.y * 0.035;
+      camPitch = Math.max(-0.8, Math.min(0.5, camPitch));
+    }
+
+    // ── ENEMY AI ──
+    for (const e of enemies) tickEnemy(e, dt);
+
+    // ── PLAYER MESH UPDATE ──
+    if (player.mesh) {
+      player.mesh.position.set(player.x, player.height/2, player.z);
+      player.mesh.lookAt(camera.position.x, player.mesh.position.y, camera.position.z);
+    }
+
+    // crosshair: highlight if enemy is in attack range + arc
+    const fwd = new THREE.Vector3();
+    camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+    let inRange = false;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const dx = e.x - player.x, dz = e.z - player.z;
+      const d = Math.hypot(dx, dz);
+      if (d > player.attackRange) continue;
+      const dotF = (dx*fwd.x + dz*fwd.z) / d;
+      if (dotF >= Math.cos(player.attackArc/2)) { inRange = true; break; }
+    }
+    crosshairEl.classList.toggle('in-range', inRange);
+  }
+
+  // camera always follows player (even after game ends so they can see the result)
+  updateCamera();
+
+  // flame flicker
+  const flick = 1 + Math.sin(t*12)*0.08 + Math.sin(t*27)*0.05 + (Math.random()-0.5)*0.06;
+  flame.scale.set(flick, 0.9 + flick*0.15, flick);
+  flameInner.scale.set(flick*0.95, 1 + (flick-1)*0.4, flick*0.95);
+  fireLight.intensity = 16 + Math.sin(t*9)*1.2 + (Math.random()-0.5)*0.8;
+  for (const s of sconces) {
+    s.light.intensity = s.base + Math.sin(t*11 + s.base)*0.4 + (Math.random()-0.5)*0.3;
+  }
+
+  renderer.render(scene, camera);
+  drawMinimap();
+}
+
+// =====================================================================
+// INIT — load textures, then start
+// =====================================================================
+async function init() {
+  await Promise.all([
+    loadTex('luffy', ['assets/luffy_standing_landscape.png', 'assets/luffy_standing_landscape.png']),
+    loadTex('commander', ['assets/khajuyan-commander.png', 'assets/khajuyan-commander.png']),
+    loadTex('shadowblade', ['assets/khajuyan-shadowblade.png', 'assets/khajuyan-shadowblade.png']),
+  ]);
+
+  // create player billboard
+  if (TEX.luffy) {
+    player.mesh = makeBillboard(TEX.luffy, player.height);
+    player.mesh.position.set(player.x, player.height/2, player.z);
+    player.mesh.castShadow = true;
+    scene.add(player.mesh);
+  }
+
+  // spawn enemies
+  spawnEnemy('shadowblade', 4, 0);             // central sanctum, near altar
+  spawnEnemy('shadowblade', -9, -8);           // artifact storage
+  spawnEnemy('shadowblade', 8, -8);            // priest quarters
+  spawnEnemy('commander', 7, 7);               // prayer hall (boss)
+
+  enemyCountEl.textContent = enemies.length;
+  updatePlayerHud();
+  animate();
+}
+
+document.getElementById('enterBtn').addEventListener('click', () => {
+  document.getElementById('startScreen').classList.add('hidden');
+  gameState = 'playing';
+  gameStartTime = performance.now();
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+init();
+</script>
+</body>
+</html>
